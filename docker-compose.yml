@@ -1,0 +1,11 @@
+services:
+  web:
+    build:
+      context: .
+    ports:
+      - '3000:3000'
+    # .env* files are dockerignored, so env is provided at runtime here.
+    # Create it first: cp .env.example .env.local
+    env_file:
+      - .env.local
+    restart: unless-stopped
