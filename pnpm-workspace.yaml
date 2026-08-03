@@ -1,7 +1,17 @@
 allowBuilds:
   lefthook: true
   sharp: true
+minimumReleaseAgeExclude:
+  - hono@4.12.34
 onlyBuiltDependencies:
   - esbuild
   - lefthook
   - sharp
+# Force patched versions of transitive deps flagged by Dependabot:
+# next pins postcss 8.4.31 / sharp 0.34, @hey-api pulls js-yaml 4.2,
+# shadcn pulls hono <4.12.34 via the MCP SDK.
+overrides:
+  hono: ^4.12.34
+  js-yaml: ^4.3.0
+  postcss: ^8.5.23
+  sharp: ^0.35.0
