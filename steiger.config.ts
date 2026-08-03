@@ -10,4 +10,12 @@ export default defineConfig([
 			'fsd/insignificant-slice': 'warn',
 		},
 	},
+	{
+		// `providers` is the conventional app-layer segment name;
+		// steiger-plugin >=0.7 flags it as essence-based
+		files: ['./src/app/**'],
+		rules: {
+			'fsd/segments-by-purpose': 'off',
+		},
+	},
 ])
