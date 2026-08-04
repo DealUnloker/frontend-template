@@ -1,17 +1,12 @@
 allowBuilds:
   lefthook: true
   sharp: true
-minimumReleaseAgeExclude:
-  - hono@4.12.34
-onlyBuiltDependencies:
-  - esbuild
-  - lefthook
-  - sharp
-# Force patched versions of transitive deps flagged by Dependabot:
-# next pins postcss 8.4.31 / sharp 0.34, @hey-api pulls js-yaml 4.2,
-# shadcn pulls hono <4.12.34 via the MCP SDK.
+minimumReleaseAge: 480
+# @hey-api/json-schema-ref-parser pins vulnerable js-yaml 4.2 (merge-key
+# quadratic CPU); drop once hey-api moves to >=4.3
 overrides:
-  hono: ^4.12.34
   js-yaml: ^4.3.0
-  postcss: ^8.5.23
-  sharp: ^0.35.0
+peerDependencyRules:
+  allowedVersions:
+    # tsconfck (via steiger) wants typescript ^5; TS 6 works fine with it
+    'tsconfck>typescript': '>=6'
