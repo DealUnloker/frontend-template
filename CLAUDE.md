@@ -169,3 +169,21 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   client fetches on first visit, and the next background revalidation runs
   with the container's env and restores SSR data
 - Node >= 24, pnpm 11
+
+## TypeScript 7
+
+The project stays on **TypeScript 6** on purpose. TS 7 (the Go-native port) is
+installable and `tsc --noEmit`, `next build`, Vitest and Playwright all pass
+under it, but two tools call JS compiler APIs the port no longer exposes:
+
+- `@hey-api/openapi-ts` — **hard blocker**. `pnpm generate-api` dies with
+  `Cannot read properties of undefined (reading 'AnyKeyword')`: it builds the
+  client via the TS AST factory (`ts.SyntaxKind`). Its peer range
+  (`>=5.5.3 || >=6.0.0`) admits TS 7, so the failure only shows at runtime.
+- `steiger` — soft blocker. cosmiconfig loads `steiger.config.ts` through the
+  TS loader and hits `typescript.findConfigFile is not a function`. Renaming
+  the config to `steiger.config.mjs` sidesteps it (verified), at the cost of
+  config typings.
+
+Dependabot ignores `typescript >=7` (`.github/dependabot.yml`). Re-test with
+`pnpm generate-api` before lifting that ignore — hey-api is the gate.

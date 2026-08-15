@@ -11,7 +11,9 @@ updates:
           - minor
           - patch
     ignore:
-      # steiger has no TypeScript 7 support yet — skip TS 7 bumps for now
+      # TS 7 (the Go port) drops parts of the JS compiler API that
+      # @hey-api/openapi-ts and steiger's config loader still call.
+      # See the TypeScript 7 note in CLAUDE.md before lifting this.
       - dependency-name: typescript
         versions: ['>=7']
 
