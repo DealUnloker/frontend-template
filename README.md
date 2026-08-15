@@ -39,6 +39,7 @@ demo API, so it works immediately after clone.
 
 | Command | Description |
 | --- | --- |
+| `pnpm verify` | Lint + type-check + FSD + unit tests, in one command |
 | `pnpm dev` | Dev server |
 | `pnpm build` | Production build |
 | `pnpm tsc` | Type-check |
@@ -95,6 +96,32 @@ Or with Compose (reads env from `.env.local`):
 ```bash
 docker compose up --build
 ```
+
+## AI agent instructions
+
+Project conventions for coding agents live in [`AGENTS.md`](./AGENTS.md) — the
+cross-tool open standard read by Codex, Cursor, Copilot, Gemini CLI, Zed and
+others. `CLAUDE.md` is a thin shim that imports it (`@AGENTS.md`), because
+Claude Code reads `CLAUDE.md` and not `AGENTS.md`. Edit `AGENTS.md`, not the
+shim.
+
+Claude Code additionally picks up two committed files worth reading before you
+trust this workspace:
+
+- `.claude/settings.json` — permission rules. `.env`, `.env.local`,
+  `.env.development` and `.env.production` are denied to the agent; the
+  read-only checks (`verify`, `tsc`, `lint:ci`, `test`, `fsd`, `build`) are
+  pre-approved; `pnpm dlx`, `pnpx`, `pnpm add`, `pnpm install` and `pnpm dev`
+  always ask. Allow rules take effect only after you accept the workspace-trust
+  dialog, which lists them.
+- `.claude/skills/fsd-slice/` — a skill that scaffolds an FSD slice. It ships
+  no `allowed-tools`, so it grants no tool access of its own. Delete the
+  directory if you don't want it.
+
+Note that `.mcp.json` servers execute code: `next-devtools` runs
+`npx -y next-devtools-mcp@latest`, fetched from npm each session, and
+`context7` is a remote HTTP endpoint. To opt out without editing the repo, add
+a `disabledMcpjsonServers` entry to your own settings.
 
 ## AI tooling (MCP)
 

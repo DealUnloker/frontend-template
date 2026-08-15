@@ -48,8 +48,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Steps 1-4 mirror `pnpm verify`; kept split for per-step annotations.
       - name: Lint
-        run: pnpm lint:ci
+        run: pnpm exec biome check . --reporter=github
 
       - name: Type-check
         run: pnpm tsc
@@ -58,7 +59,7 @@ jobs:
         run: pnpm run fsd
 
       - name: Tests
-        run: pnpm test
+        run: pnpm exec vitest run --reporter=github-actions
 
       - name: Build
         run: pnpm build

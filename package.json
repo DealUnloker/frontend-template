@@ -11,6 +11,7 @@
 		"lint": "biome check --write .",
 		"lint-unsafe": "biome check --write --unsafe .",
 		"lint:ci": "biome check .",
+		"verify": "pnpm lint:ci && pnpm tsc && pnpm run fsd && pnpm test",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
