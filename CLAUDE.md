@@ -47,6 +47,21 @@ src/
   its own layer (e.g. entity → entity) or any layer above.
 - Slices are organized into segments: `ui/`, `api/`, `model/`, `lib/`, `config/`.
 
+### FSD deviations (deliberate — these override external FSD guidance)
+
+Published FSD material, including the official `feature-sliced/skills` Agent
+Skill, teaches the opposite of the three rules below. This project's choices
+win; do not "fix" the code toward the canonical guidance.
+
+- **No slice `index.ts` barrels.** Canonical FSD makes every slice export
+  through a public API; here `fsd/public-api` and `fsd/no-public-api-sidestep`
+  are off and imports go straight to segment paths.
+- **The `widgets/` layer is used on purpose** (`src/widgets/pet-details`).
+  The official skill discourages adopting it.
+- **`src/pages/` keeps its name** — it is not renamed to `src/_pages/`, and
+  the root `pages/` stub stays (it holds `_document.tsx` and `404.tsx`, so the
+  empty-directory build failure that motivates the rename does not apply).
+
 ### Next.js routing vs FSD
 
 - App Router lives in root `app/` (not `src/app` — that's the FSD app layer).
@@ -172,17 +187,29 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
 
 ## MCP (AI tooling)
 
-`.mcp.json` wires the **Next.js dev-server MCP** into Claude Code at project
-scope. Next 16 serves it from `/_next/mcp` (`experimental.mcpServer`, on by
-default — no `next.config.ts` change needed), so the tools only answer while
-`pnpm dev` is running; otherwise the server shows as failed and can be ignored.
+`.mcp.json` registers three project-scoped MCP servers:
 
-Tools it exposes: `get_project_metadata`, `get_routes`, `get_errors`,
-`get_compilation_issues`, `compile_route`, `get_logs`, `get_page_metadata`,
-`get_request_insights`, `get_server_action_by_id`.
+- **`next-devtools`** (`next-devtools-mcp`, official) — proxy to the Next.js
+  dev-server MCP. Next 16 also serves that endpoint directly at
+  `/_next/mcp` (`experimental.mcpServer`, on by default), but the proxy is
+  wired instead: it discovers the dev server's real port instead of assuming
+  3000, and it starts even with no dev server running, where a direct http
+  entry would show as a failed server for everyone who clones the repo.
+  `nextjs_docs` works offline — Next 16 ships its docs in
+  `node_modules/next/dist/docs/`, matching the installed version exactly.
+  Runtime tools (routes, compilation issues, dev-server errors, single-route
+  compilation) sit behind `nextjs_call` and need `pnpm dev`.
+- **`shadcn`** — `shadcn mcp` from the CLI already in devDependencies, run via
+  `pnpm exec` so it stays on the lockfile version. Resolves components against
+  this project's `components.json` (base-nova / Base UI), so it won't suggest
+  v2-era Radix imports. Do NOT run `shadcn mcp init` — it overwrites
+  `.mcp.json` wholesale.
+- **`context7`** — hosted docs retrieval, no API key. Covers the libraries
+  that have no MCP server of their own (TanStack Query, Tailwind, Base UI,
+  Biome, Vitest, Zod, Hey API, steiger).
 
-Useful for compiling a single route without an HTTP request and for reading the
-dev server's real error/compilation state instead of guessing from source.
+No MCP server exists for Biome, Zod, steiger, Hey API or TanStack Query;
+`pnpm lint:ci`, `pnpm tsc` and `pnpm run fsd` are the interface for those.
 
 ## TypeScript 7
 
@@ -199,8 +226,17 @@ under it, but two tools call JS compiler APIs the port no longer exposes:
   the config to `steiger.config.mjs` sidesteps it (verified), at the cost of
   config typings.
 
+A `pnpm.overrides` entry pinning hey-api's own TypeScript does **not** help:
+`typescript` is a peerDependency there, so a `parent>child` override rewrites
+the accepted range without installing a private copy, and the import fails
+identically. Escaping it needs either `@hey-api/openapi-ts@next` (its
+pre-release drops the TS compiler API entirely) or moving codegen into a
+nested package with its own `typescript@6`.
+
 Dependabot ignores `typescript >=7` (`.github/dependabot.yml`). Re-test with
-`pnpm generate-api` before lifting that ignore — hey-api is the gate.
+`pnpm generate-api` before lifting that ignore — hey-api is the gate. Worth
+re-checking then: `cosmiconfig@10` dropped its TypeScript dependency, so a
+steiger release that bumps it removes the config-rename workaround too.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

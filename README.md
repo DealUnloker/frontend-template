@@ -98,9 +98,14 @@ docker compose up --build
 
 ## AI tooling (MCP)
 
-`.mcp.json` connects the Next.js dev-server MCP endpoint (`/_next/mcp`) so
-AI assistants can query real routes, compilation issues, and dev-server errors
-instead of inferring them. It answers only while `pnpm dev` is running.
+`.mcp.json` ships three project-scoped MCP servers for AI assistants:
+
+- **next-devtools** — version-matched Next.js docs (offline, from
+  `node_modules`) plus live dev-server state: real routes, compilation issues,
+  and errors instead of guesses. Runtime queries need `pnpm dev` running.
+- **shadcn** — resolves components against this project's `components.json`
+  registry, so suggestions match the installed base-nova / Base UI setup.
+- **context7** — up-to-date docs for the rest of the stack; no API key.
 
 ## Requirements
 

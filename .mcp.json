@@ -1,8 +1,18 @@
 {
 	"mcpServers": {
-		"nextjs": {
+		"next-devtools": {
+			"type": "stdio",
+			"command": "npx",
+			"args": ["-y", "next-devtools-mcp@latest"]
+		},
+		"shadcn": {
+			"type": "stdio",
+			"command": "pnpm",
+			"args": ["exec", "shadcn", "mcp"]
+		},
+		"context7": {
 			"type": "http",
-			"url": "http://localhost:3000/_next/mcp"
+			"url": "https://mcp.context7.com/mcp"
 		}
 	}
 }
