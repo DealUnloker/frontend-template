@@ -170,6 +170,20 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   with the container's env and restores SSR data
 - Node >= 24, pnpm 11
 
+## MCP (AI tooling)
+
+`.mcp.json` wires the **Next.js dev-server MCP** into Claude Code at project
+scope. Next 16 serves it from `/_next/mcp` (`experimental.mcpServer`, on by
+default — no `next.config.ts` change needed), so the tools only answer while
+`pnpm dev` is running; otherwise the server shows as failed and can be ignored.
+
+Tools it exposes: `get_project_metadata`, `get_routes`, `get_errors`,
+`get_compilation_issues`, `compile_route`, `get_logs`, `get_page_metadata`,
+`get_request_insights`, `get_server_action_by_id`.
+
+Useful for compiling a single route without an HTTP request and for reading the
+dev server's real error/compilation state instead of guessing from source.
+
 ## TypeScript 7
 
 The project stays on **TypeScript 6** on purpose. TS 7 (the Go-native port) is
@@ -187,3 +201,13 @@ under it, but two tools call JS compiler APIs the port no longer exposes:
 
 Dependabot ignores `typescript >=7` (`.github/dependabot.yml`). Re-test with
 `pnpm generate-api` before lifting that ignore — hey-api is the gate.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

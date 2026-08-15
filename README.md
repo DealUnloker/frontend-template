@@ -96,6 +96,12 @@ Or with Compose (reads env from `.env.local`):
 docker compose up --build
 ```
 
+## AI tooling (MCP)
+
+`.mcp.json` connects the Next.js dev-server MCP endpoint (`/_next/mcp`) so
+AI assistants can query real routes, compilation issues, and dev-server errors
+instead of inferring them. It answers only while `pnpm dev` is running.
+
 ## Requirements
 
 - Node >= 24 (`.nvmrc`)
