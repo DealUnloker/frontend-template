@@ -1,12 +1,13 @@
 import type { MetadataRoute } from 'next'
+import { connection } from 'next/server'
 import env from '@/shared/config/env'
 import { Routes } from '@/shared/config/routes'
 
-// Render per request so SITE_URL is read at runtime (e.g. from the container
-// environment), not baked in at build time.
-export const dynamic = 'force-dynamic'
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+	// Cache Components prerenders this route otherwise, baking the build-time
+	// SITE_URL into sitemap.xml. connection() defers it to the request.
+	await connection()
 
-export default function sitemap(): MetadataRoute.Sitemap {
 	return Object.values(Routes).map((route) => ({
 		url: new URL(route, env.SITE_URL).href,
 	}))

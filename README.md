@@ -5,7 +5,7 @@ client, and strict tooling out of the box.
 
 ## Stack
 
-- **Next.js 16** — App Router, React 19, React Compiler enabled
+- **Next.js 16** — App Router, React 19, Cache Components and React Compiler enabled
 - **Feature-Sliced Design** — validated with [steiger](https://github.com/feature-sliced/steiger)
 - **Hey API (OpenAPI-TS)** — typed API client + Zod schemas + React Query options generated from an OpenAPI spec
 - **TanStack React Query v5** — with SSR prefetch/hydration wired up
@@ -78,10 +78,12 @@ app itself (`pnpm build-start`); locally it reuses a server already running on
 :3000, and in CI it runs `pnpm start` against the build produced earlier in the
 pipeline.
 
-Note: the demo home page uses ISR (`revalidate = 60`) and prefetches the
-**live** Petstore API at build time and on background revalidations, so e2e
-runs need network access and can occasionally flake if the public sandbox
-misbehaves (CI retries failed tests twice). Point `API_URL` at your own
+Note: the demo home page caches its prefetched snapshot with `'use cache'` +
+`cacheLife('minutes')` and fills it from the **live** Petstore API at build
+time and on background regenerations, so e2e runs need network access and can
+occasionally flake if the public sandbox misbehaves (CI retries failed tests
+twice). Two of the specs assert on the server-rendered HTML, so they also go
+red when a demo pet ID rots on the sandbox. Point `API_URL` at your own
 backend — or mock the network in Playwright — to make them hermetic.
 
 ## Docker

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import { Suspense } from 'react'
 import { AppProviders } from '@/app/providers/app-providers'
 import { Toaster } from '@/shared/ui/sonner'
 import './globals.css'
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<html lang='en'>
 			<body className='bg-background text-foreground antialiased'>
-				<AppProviders>{children}</AppProviders>
+				<Suspense>
+					<AppProviders>{children}</AppProviders>
+				</Suspense>
 				<Toaster />
 			</body>
 		</html>

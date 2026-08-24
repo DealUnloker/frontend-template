@@ -9,7 +9,8 @@
 - `pnpm test` / `test:watch` / `test:coverage` — Vitest (jsdom + Testing
   Library); coverage is V8 over `src/**`
 - `pnpm test:e2e` — Playwright; needs network, builds and starts the app itself
-- `pnpm build` — production build; prerenders `/` against the live API
+- `pnpm build` — production build; fills the `'use cache'` snapshot of `/`
+  against the live API
 - `pnpm dev` — dev server (long-running; don't start it just to check something)
 - `pnpm generate-api` — regenerate the API client from the OpenAPI spec (Hey API)
 
@@ -107,9 +108,15 @@ win; do not "fix" the code toward the canonical guidance.
   `pnpm test:e2e`** — otherwise Playwright silently tests the dev server
   instead of a production build, and the run can go green on code that would
   fail when built.
-- E2E depends on the **live** Petstore API: the build step prefetches it (ISR
-  prerender), and background revalidations hit it too. Runs need network
+- E2E depends on the **live** Petstore API: the build fills the `'use cache'`
+  snapshot from it, and background regenerations hit it too. Runs need network
   access and can flake if the sandbox misbehaves; CI retries twice.
+- Two specs read the raw SSR HTML rather than the rendered page: one fails if
+  pet data stops being server-rendered, one fails if `/` starts re-rendering
+  per request instead of coming from cache. If the first goes red, check the
+  demo pet IDs against the sandbox before suspecting the app — those records
+  are user-mutable and have died before
+  (`src/features/select-pet/model/demo-pet-ids.ts`).
 
 ## UI stack
 
@@ -147,13 +154,24 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   take the client as an argument (see `src/entities/pet/api/pet.options.ts`).
 - **SSR prefetch** — server page compositions use `QueryClient` + `prefetchQuery` +
   `dehydrate` + `HydrationBoundary` (see `src/pages/home/ui/home-page.tsx`).
-  Routes that prefetch API data must opt out of plain static prerendering in
-  their `app/` route file, otherwise Next ships a frozen build-time snapshot.
-  The home route uses ISR (`export const revalidate = 60` in `app/page.tsx`):
-  responses come from cache instantly and regenerate in the background. Use
-  `dynamic = 'force-dynamic'` instead when data must be per-request fresh —
-  but note the whole page then blocks on the API (visitors see `loading.tsx`
-  until it responds).
+- **Caching is opt-in** — Cache Components is enabled, so everything is
+  uncached and dynamic by default and `export const revalidate` / `dynamic` /
+  `fetchCache` are **build errors**. A composition that prefetches marks
+  itself with `'use cache'` + `cacheLife(...)`; `HomePage` uses
+  `cacheLife('minutes')` (stale 5m / revalidate 60s / expire 1h), the direct
+  replacement for the `revalidate = 60` it used to carry. Drop the directive
+  and the route still works — `app/loading.tsx` is the Suspense boundary that
+  keeps it off the prerender path — it just refetches every request.
+  The directive cannot move deeper than the composition: `'use cache'` takes
+  only serializable arguments and return values, and `QueryClient` and the
+  Hey API client are neither.
+- **Reading runtime state** — anything that must observe the environment per
+  request needs `await io()` (from `next/cache`) or, in a route handler that
+  should wait for a real request, `await connection()` (from `next/server`).
+  Without one, the value is captured during prerendering and baked into the
+  output. `AppProviders` uses `io()` so `API_URL` reaches the browser as the
+  value the container was started with; `robots.ts` and `sitemap.ts` use
+  `connection()` for `SITE_URL`.
 
 ## Environment
 
@@ -163,7 +181,7 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   through `ApiClientProvider` (SSR prefetch on the server, direct API calls on
   the client). Do not convert it to a public env var.
 - `SITE_URL` (optional, server-only, defaults to `http://localhost:3000`) —
-  public origin for robots.txt/sitemap.xml. Those routes are `force-dynamic`,
+  public origin for robots.txt/sitemap.xml. Those routes call `connection()`,
   so it is read at runtime like `API_URL` (swappable per container). The Zod
   default applies at runtime, where validation runs — do not turn these routes
   static: at build time `SKIP_ENV_VALIDATION=1` (Docker) makes t3-env return
@@ -172,13 +190,20 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
 
 ## Build & deploy
 
-- React Compiler enabled (`reactCompiler: true`), `poweredByHeader: false`, `typedRoutes: true`
+- Cache Components (`cacheComponents: true`), React Compiler
+  (`reactCompiler: true`), `poweredByHeader: false`, `typedRoutes: true`
 - Docker: multi-stage `Dockerfile` (standalone output via `DOCKER_BUILD=1`);
   `.env*` files are dockerignored — pass env at runtime
-- Docker builds have no `API_URL`, so the ISR build snapshot of `/` contains no
-  prefetched data (prefetch errors are swallowed). Self-heals at runtime: the
-  client fetches on first visit, and the next background revalidation runs
-  with the container's env and restores SSR data
+- Docker builds have no `API_URL`, so the cached snapshot of `/` is built from
+  a failed prefetch and holds an empty React Query cache (`prefetchQuery`
+  swallows the error and `dehydrate()` keeps successful queries only). The
+  page still works from the first request: `AppProviders` calls `io()`, so the
+  browser gets the container's real `API_URL` and fetches client-side. The
+  first background regeneration past the 60s `revalidate` then restores SSR
+  data — verified by building an image with no `API_URL` and running it with
+  one. Note `cacheLife('minutes')` also sets `expire: 3600`, so a container
+  with no traffic for an hour makes the next visitor wait on the API instead
+  of being served a stale snapshot; the old `revalidate = 60` never expired
 - Node >= 24, pnpm 11
 
 ## TypeScript 7

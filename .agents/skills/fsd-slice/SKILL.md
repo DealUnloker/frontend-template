@@ -80,10 +80,38 @@ Route files under `app/` stay thin — they import a composition from `@/pages/*
 and nothing else. Route constants belong in `src/shared/config/routes.ts`
 (`typedRoutes` is on).
 
-A route that prefetches API data must opt out of plain static prerendering, or
-Next ships a frozen build-time snapshot: `export const revalidate = <seconds>`
-for ISR (what `app/page.tsx` uses), or `dynamic = 'force-dynamic'` when data
-must be per-request fresh.
+Cache Components is on (`cacheComponents: true` in `next.config.ts`), so
+`export const revalidate`, `export const dynamic` and `export const fetchCache`
+are **hard build errors**. Never add them to a route.
+
+Caching is opt-in, not opt-out — everything is uncached by default:
+
+- **A page composition that prefetches API data** — put the cache boundary on
+  the composition itself, next to the prefetch, as in
+  `src/pages/home/ui/home-page.tsx`:
+
+  ```tsx
+  import { cacheLife } from 'next/cache'
+
+  export async function ThingPage() {
+  	'use cache'
+  	cacheLife('minutes') // stale 5m / revalidate 60s / expire 1h
+  	// ...prefetch + <HydrationBoundary>
+  }
+  ```
+
+  The directive has to sit here and not deeper: `'use cache'` only accepts
+  serializable arguments and return values, and `QueryClient` and the Hey API
+  client are neither. Without it the route still works — `app/loading.tsx` is
+  the Suspense boundary that keeps it from blocking the prerender — it is just
+  refetched on every request.
+
+- **Anything that must read env (or other runtime state) per request** —
+  `await io()` from `next/cache` as the first statement, and make the function
+  `async`. See `src/app/providers/app-providers.tsx`. For route handlers that
+  should wait for a real request, `await connection()` from `next/server` does
+  the same and is what `app/robots.ts` and `app/sitemap.ts` use. Skip this and
+  the build-time value gets baked into the prerendered output.
 
 ## 6. Match the house style
 
