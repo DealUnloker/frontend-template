@@ -13,6 +13,12 @@
 - `pnpm dev` — dev server (long-running; don't start it just to check something)
 - `pnpm generate-api` — regenerate the API client from the OpenAPI spec (Hey API)
 
+Install dependencies only with `pnpm add`. Agent Skills bundled in
+`.agents/skills/` sometimes give `npm i -g` / `npx` instructions — translate
+them: `pnpm-workspace.yaml` sets `minimumReleaseAge: 480` plus `overrides`,
+CI runs `pnpm install --frozen-lockfile`, and an npm-installed dev dependency
+fails the build.
+
 ## Architecture
 
 Next.js 16 App Router with Feature-Sliced Design (FSD).
@@ -86,14 +92,21 @@ win; do not "fix" the code toward the canonical guidance.
 
 ## Testing
 
-- **Vitest** + **Testing Library** (jsdom), config in `vitest.config.ts`
+- **Vitest 4.1** + **Testing Library** (jsdom), config in `vitest.config.ts`
   (`resolve.tsconfigPaths: true` resolves the `@/` and `@generated/` aliases).
+  The bundled `vitest` Agent Skill documents Vitest **5.x beta**: `vi.when`,
+  context-scoped `bench` and `toHaveBeenExhausted` do not exist here, and
+  `test.sequential` still works despite the skill calling it removed.
 - Tests are colocated with slices: `src/**/*.test.{ts,tsx}`
   (example: `src/entities/pet/ui/pet-card.test.tsx`).
 - **Playwright** e2e tests live in `e2e/` (`*.spec.ts`), config in
   `playwright.config.ts` — its `webServer` runs `pnpm build-start` locally
   (reusing an already-running server on :3000) and `pnpm start` in CI, where
   the build step has already run. Chromium only by default.
+  `reuseExistingServer` is on outside CI, so **stop `pnpm dev` before
+  `pnpm test:e2e`** — otherwise Playwright silently tests the dev server
+  instead of a production build, and the run can go green on code that would
+  fail when built.
 - E2E depends on the **live** Petstore API: the build step prefetches it (ISR
   prerender), and background revalidations hit it too. Runs need network
   access and can flake if the sandbox misbehaves; CI retries twice.

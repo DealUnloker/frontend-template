@@ -50,6 +50,9 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 
+# vitest
+/.vitest-reports/
+
 # agent local overrides (.claude/settings.json and .claude/skills/ are committed)
 .claude/settings.local.json
 CLAUDE.local.md

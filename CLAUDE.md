@@ -57,5 +57,21 @@ No MCP server exists for Biome, Zod, steiger, Hey API or TanStack Query —
   read-only checks, and always asks before commands that install or execute
   fetched code (`pnpm add`, `pnpm install`, `pnpm dlx`, `pnpx`). Allow rules
   apply only after the workspace-trust dialog is accepted.
-- `.claude/skills/fsd-slice/` scaffolds an FSD slice. It declares no
-  `allowed-tools`, so it grants no tool access of its own.
+- Skills live in `.agents/skills/`, the cross-agent convention that Copilot,
+  Gemini CLI, Zed, opencode and Amp read directly; `.claude/skills/*` are
+  symlinks to them, because Claude Code scans only its own directory. Edit
+  under `.agents/`. None of them declare `allowed-tools`, so they grant no
+  tool access of their own.
+  - `fsd-slice` — repo-local, scaffolds an FSD slice.
+  - `next-dev-loop` and `next-cache-components-adoption` — from
+    `vercel/next.js`. `next-dev-loop` additionally wants the external
+    `agent-browser` CLI and a running `pnpm dev`; without it it is inert.
+  - `accessibility` (WCAG 2.2 audits, from `addyosmani/web-quality-skills`)
+    and `vitest` (from `antfu/skills`).
+
+  The vendored ones are pinned by `skills-lock.json` and refreshed with
+  `npx skills update`; all their upstreams are MIT. Install new ones with
+  `npx skills add <repo> --skill <name> -a claude-code --copy`, then move the
+  directory into `.agents/skills/` and symlink it back into `.claude/skills/`
+  — `--copy` matters, since the CLI otherwise links to a cache outside the
+  repo and clones would get a dangling link.

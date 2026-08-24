@@ -114,9 +114,22 @@ trust this workspace:
   pre-approved; `pnpm dlx`, `pnpx`, `pnpm add`, `pnpm install` and `pnpm dev`
   always ask. Allow rules take effect only after you accept the workspace-trust
   dialog, which lists them.
-- `.claude/skills/fsd-slice/` — a skill that scaffolds an FSD slice. It ships
-  no `allowed-tools`, so it grants no tool access of its own. Delete the
-  directory if you don't want it.
+- `.agents/skills/` — Agent Skills, kept in the cross-agent directory that
+  Copilot, Gemini CLI, Zed, opencode and Amp read directly; `.claude/skills/*`
+  symlink to them, because Claude Code scans only its own directory. Ships
+  `fsd-slice` (repo-local, scaffolds an FSD slice) plus four vendored from
+  upstream projects, all MIT: two from `vercel/next.js` (`next-dev-loop` and
+  `next-cache-components-adoption`), `accessibility`
+  from `addyosmani/web-quality-skills`, and `vitest` from `antfu/skills`. The
+  vendored ones are pinned by `skills-lock.json` and refreshed with
+  `npx skills update`. None declare `allowed-tools`, so they grant no tool
+  access of their own; delete `.agents/skills/` if you don't want them.
+
+  On a Windows clone with `core.symlinks=false` the link materializes as a
+  plain text file and Claude Code simply won't find the skill — every other
+  agent still reads the canonical copy, and nothing else breaks. Run
+  `git config core.symlinks true` before cloning to get it, or copy the
+  directory instead of linking.
 
 Note that `.mcp.json` servers execute code: `next-devtools` runs
 `npx -y next-devtools-mcp@latest`, fetched from npm each session, and
