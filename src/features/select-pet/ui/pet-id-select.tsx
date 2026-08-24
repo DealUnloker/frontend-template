@@ -12,12 +12,15 @@ export function PetIdSelect({
 	onChange: (petId: number) => void
 }) {
 	return (
-		<div className='flex gap-2'>
+		<fieldset className='flex gap-2'>
+			{/* The '#2'-style button names carry no context on their own */}
+			<legend className='sr-only'>Demo pet IDs</legend>
 			{DEMO_PET_IDS.map((petId) => (
 				<Button
 					key={petId}
 					variant={petId === value ? 'default' : 'outline'}
 					size='sm'
+					aria-pressed={petId === value}
 					onClick={() => {
 						if (petId !== value) {
 							// Sonner demo — toasts render via <Toaster /> in app/layout.tsx
@@ -29,6 +32,6 @@ export function PetIdSelect({
 					#{petId}
 				</Button>
 			))}
-		</div>
+		</fieldset>
 	)
 }

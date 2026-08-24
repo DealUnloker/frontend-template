@@ -42,6 +42,8 @@ test('the home page is served from cache, not re-rendered per request', async ({
 test('unknown route renders the 404 page', async ({ page }) => {
 	await page.goto('/definitely-not-a-page')
 
-	await expect(page.getByRole('heading', { name: '404' })).toBeVisible()
+	await expect(
+		page.getByRole('heading', { name: 'Page not found' }),
+	).toBeVisible()
 	await expect(page.getByRole('link', { name: 'Go home' })).toBeVisible()
 })

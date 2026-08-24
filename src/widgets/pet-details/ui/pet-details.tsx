@@ -20,12 +20,18 @@ export function PetDetails() {
 	return (
 		<section className='flex flex-col gap-4'>
 			<PetIdSelect value={petId} onChange={setPetId} />
-			{isPending && <p className='text-muted-foreground'>Loading pet…</p>}
-			{isError && (
-				<p className='text-destructive'>
-					Failed to load pet (see console for validation details)
-				</p>
-			)}
+			{/* Always mounted: a live region that appears at the same moment as
+			    its text is not reliably announced by screen readers. */}
+			<div aria-live='polite' aria-atomic='true'>
+				{isPending && (
+					<p className='text-muted-foreground'>Loading pet…</p>
+				)}
+				{isError && (
+					<p className='text-destructive'>
+						Failed to load pet (see console for validation details)
+					</p>
+				)}
+			</div>
 			{pet && <PetCard pet={pet} className='max-w-sm' />}
 		</section>
 	)
