@@ -108,14 +108,15 @@ win; do not "fix" the code toward the canonical guidance.
   `pnpm test:e2e`** — otherwise Playwright silently tests the dev server
   instead of a production build, and the run can go green on code that would
   fail when built.
-- E2E depends on the **live** Petstore API: the build fills the `'use cache'`
+- E2E depends on the **live** Mockzoo API: the build fills the `'use cache'`
   snapshot from it, and background regenerations hit it too. Runs need network
   access and can flake if the sandbox misbehaves; CI retries twice.
 - Two specs read the raw SSR HTML rather than the rendered page: one fails if
   pet data stops being server-rendered, one fails if `/` starts re-rendering
   per request instead of coming from cache. If the first goes red, check the
-  demo pet IDs against the sandbox before suspecting the app — those records
-  are user-mutable and have died before
+  demo pet IDs against the Mockzoo deployment before suspecting the app —
+  seed pets 1-3 are stable but still mutable, and
+  `POST /v1/admin/reset` restores them
   (`src/features/select-pet/model/demo-pet-ids.ts`).
 
 ## UI stack
@@ -139,9 +140,11 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   from the validated env (`src/shared/config/env.ts`), so `.env.local` is
   required for generation. Note: the config imports env via a relative path,
   not the `@/` alias — jiti (the config loader) doesn't resolve tsconfig paths.
-  Zod response validation is enabled. Note: Petstore is a public sandbox with
-  user-mutable data, so some records violate the spec and fail validation —
-  the demo fetches pets by ID from a known-good list
+  Zod response validation is enabled. Note: Mockzoo is our own backend and is
+  spec-compliant by construction, so a validation failure here now points at
+  a real Mockzoo bug rather than sandbox rot — the demo still fetches pets by
+  ID from a known-good list of stable seed pets, restorable via
+  `POST /v1/admin/reset`
   (`src/features/select-pet/model/demo-pet-ids.ts`).
 - **TanStack React Query v5** — `QueryClient` factory at `src/shared/api/query-client.ts`
   (used by both the client provider and SSR prefetch). Its query/mutation caches log

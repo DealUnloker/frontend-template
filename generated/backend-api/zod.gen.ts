@@ -2,224 +2,113 @@
 
 import * as z from 'zod';
 
-export const zOrder = z.object({
-    id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
-    petId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
-    quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    shipDate: z.iso.datetime().optional(),
-    status: z.enum([
-        'placed',
-        'approved',
-        'delivered'
-    ]).optional(),
-    complete: z.boolean().optional()
-});
+export const zPetStatus = z.enum([
+    'available',
+    'pending',
+    'sold'
+]);
 
-export const zCategory = z.object({
-    id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
-    name: z.string().optional()
-});
-
-export const zUser = z.object({
-    id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
-    username: z.string().optional(),
-    firstName: z.string().optional(),
-    lastName: z.string().optional(),
-    email: z.string().optional(),
-    password: z.string().optional(),
-    phone: z.string().optional(),
-    userStatus: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
-});
-
-export const zTag = z.object({
-    id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
-    name: z.string().optional()
-});
+export const zPetSpecies = z.enum([
+    'dog',
+    'cat',
+    'bird',
+    'fish',
+    'other'
+]);
 
 export const zPet = z.object({
-    id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     name: z.string(),
-    category: zCategory.optional(),
-    photoUrls: z.array(z.string()),
-    tags: z.array(zTag).optional(),
-    status: z.enum([
-        'available',
-        'pending',
-        'sold'
-    ]).optional()
+    status: zPetStatus,
+    species: zPetSpecies,
+    breed: z.string().optional(),
+    photoUrl: z.string().optional(),
+    tags: z.array(z.string()),
+    createdAt: z.iso.datetime()
 });
 
-export const zApiResponse = z.object({
-    code: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    type: z.string().optional(),
-    message: z.string().optional()
+export const zPetList = z.object({
+    items: z.array(zPet),
+    total: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
 });
 
-export const zPet2 = zPet;
+export const zCreatePet = z.object({
+    name: z.string(),
+    species: zPetSpecies,
+    status: zPetStatus.optional(),
+    breed: z.string().optional(),
+    photoUrl: z.string().optional(),
+    tags: z.array(z.string()).optional()
+});
 
-/**
- * List of user object
- */
-export const zUserArray = z.array(zUser);
+export const zUpdatePet = z.object({
+    name: z.string().optional(),
+    species: zPetSpecies.optional(),
+    status: zPetStatus.optional(),
+    breed: z.string().optional(),
+    photoUrl: z.string().optional(),
+    tags: z.array(z.string()).optional()
+});
 
-/**
- * Create a new pet in the store
- */
-export const zAddPetBody = zPet;
+export const zError = z.object({
+    error: z.object({
+        code: z.string(),
+        message: z.string()
+    })
+});
 
-/**
- * Successful operation
- */
-export const zAddPetResponse = zPet;
-
-/**
- * Update an existent pet in the store
- */
-export const zUpdatePetBody = zPet;
-
-/**
- * Successful operation
- */
-export const zUpdatePetResponse = zPet;
-
-export const zFindPetsByStatusQuery = z.object({
-    status: z.enum([
-        'available',
-        'pending',
-        'sold'
-    ]).default('available')
+export const zListPetsQuery = z.object({
+    status: zPetStatus.optional(),
+    species: zPetSpecies.optional(),
+    limit: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional().default(20),
+    offset: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional().default(0)
 });
 
 /**
- * successful operation
+ * A page of pets
  */
-export const zFindPetsByStatusResponse = z.array(zPet);
+export const zListPetsResponse = zPetList;
 
-export const zFindPetsByTagsQuery = z.object({
-    tags: z.array(z.string())
-});
+export const zCreatePetBody = zCreatePet;
 
 /**
- * successful operation
+ * Pet created
  */
-export const zFindPetsByTagsResponse = z.array(zPet);
-
-export const zDeletePetHeaders = z.object({
-    api_key: z.string().optional()
-});
+export const zCreatePetResponse = zPet;
 
 export const zDeletePetPath = z.object({
     petId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
 });
+
+/**
+ * Pet deleted
+ */
+export const zDeletePetResponse = z.void();
 
 export const zGetPetByIdPath = z.object({
     petId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
 });
 
 /**
- * successful operation
+ * The requested pet
  */
 export const zGetPetByIdResponse = zPet;
 
-export const zUpdatePetWithFormPath = z.object({
+export const zUpdatePetBody = zUpdatePet;
+
+export const zUpdatePetPath = z.object({
     petId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
 });
 
-export const zUpdatePetWithFormQuery = z.object({
-    name: z.string().optional(),
-    status: z.string().optional()
-});
+/**
+ * Pet updated
+ */
+export const zUpdatePetResponse = zPet;
 
 /**
- * successful operation
+ * Sandbox reset
  */
-export const zUpdatePetWithFormResponse = zPet;
-
-export const zUploadFileBody = z.string();
-
-export const zUploadFilePath = z.object({
-    petId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
-});
-
-export const zUploadFileQuery = z.object({
-    additionalMetadata: z.string().optional()
-});
-
-/**
- * successful operation
- */
-export const zUploadFileResponse = zApiResponse;
-
-/**
- * successful operation
- */
-export const zGetInventoryResponse = z.record(z.string(), z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }));
-
-export const zPlaceOrderBody = zOrder;
-
-/**
- * successful operation
- */
-export const zPlaceOrderResponse = zOrder;
-
-export const zDeleteOrderPath = z.object({
-    orderId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
-});
-
-export const zGetOrderByIdPath = z.object({
-    orderId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
-});
-
-/**
- * successful operation
- */
-export const zGetOrderByIdResponse = zOrder;
-
-/**
- * Created user object
- */
-export const zCreateUserBody = zUser;
-
-/**
- * successful operation
- */
-export const zCreateUserResponse = zUser;
-
-export const zCreateUsersWithListInputBody = z.array(zUser);
-
-/**
- * Successful operation
- */
-export const zCreateUsersWithListInputResponse = zUser;
-
-export const zLoginUserQuery = z.object({
-    username: z.string().optional(),
-    password: z.string().optional()
-});
-
-/**
- * successful operation
- */
-export const zLoginUserResponse = z.string();
-
-export const zDeleteUserPath = z.object({
-    username: z.string()
-});
-
-export const zGetUserByNamePath = z.object({
-    username: z.string()
-});
-
-/**
- * successful operation
- */
-export const zGetUserByNameResponse = zUser;
-
-/**
- * Update an existent user in the store
- */
-export const zUpdateUserBody = zUser;
-
-export const zUpdateUserPath = z.object({
-    username: z.string()
+export const zResetSandboxResponse = z.object({
+    reset: z.boolean(),
+    pets: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
 });

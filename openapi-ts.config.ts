@@ -2,7 +2,7 @@ import type { UserConfig } from '@hey-api/openapi-ts'
 import env from './src/shared/config/env'
 
 // Spec path relative to API_URL. API_URL must be the full API base URL
-// (including any base path like /v2) — the runtime client uses it as baseUrl.
+// (including any base path like /v1) — the runtime client uses it as baseUrl.
 const SPEC_PATH = 'openapi.json'
 
 const apiClient: UserConfig = {

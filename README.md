@@ -25,8 +25,10 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-The template ships pointed at the public [Swagger Petstore v3](https://petstore3.swagger.io)
-demo API, so it works immediately after clone.
+The template ships pointed at [Mockzoo](https://mockzoo.dealunloker.com), a
+self-hosted, stable mock pet-store API purpose-built for this template (spec
+at `/v1/openapi.json`, sandbox reset via `POST /v1/admin/reset`, seed pets at
+ids 1-3), so it works immediately after clone.
 
 ### Connecting your own API
 
@@ -79,18 +81,19 @@ app itself (`pnpm build-start`); locally it reuses a server already running on
 pipeline.
 
 Note: the demo home page caches its prefetched snapshot with `'use cache'` +
-`cacheLife('minutes')` and fills it from the **live** Petstore API at build
+`cacheLife('minutes')` and fills it from the **live** Mockzoo API at build
 time and on background regenerations, so e2e runs need network access and can
-occasionally flake if the public sandbox misbehaves (CI retries failed tests
-twice). Two of the specs assert on the server-rendered HTML, so they also go
-red when a demo pet ID rots on the sandbox. Point `API_URL` at your own
-backend — or mock the network in Playwright — to make them hermetic.
+occasionally flake if the sandbox misbehaves (CI retries failed tests twice).
+Two of the specs assert on the server-rendered HTML, so they also go red when
+a demo pet ID is missing on the sandbox — `POST /v1/admin/reset` restores the
+seed pets. Point `API_URL` at your own backend — or mock the network in
+Playwright — to make them hermetic.
 
 ## Docker
 
 ```bash
 docker build -t frontend-template .
-docker run -p 3000:3000 -e API_URL=https://petstore3.swagger.io/api/v3 frontend-template
+docker run -p 3000:3000 -e API_URL=https://mockzoo.dealunloker.com/v1 frontend-template
 ```
 
 Or with Compose (reads env from `.env.local`):
