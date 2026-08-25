@@ -155,8 +155,11 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   server components use `createBackendApiClients()` from `src/shared/api/server-api-client.ts`.
 - **Entity QO pattern** — entity options wrap generated Hey API queryOptions and
   take the client as an argument (see `src/entities/pet/api/pet.options.ts`).
-- **SSR prefetch** — server page compositions use `QueryClient` + `prefetchQuery` +
-  `dehydrate` + `HydrationBoundary` (see `src/pages/home/ui/home-page.tsx`).
+- **SSR prefetch** — server page compositions use `QueryClient` +
+  `query(...).catch(noop)` + `dehydrate` + `HydrationBoundary` (see
+  `src/pages/home/ui/home-page.tsx`). `prefetchQuery` is deprecated in
+  TanStack Query v5 and goes away in v6; `query()` throws instead of
+  swallowing, hence the explicit `catch`.
 - **Caching is opt-in** — Cache Components is enabled, so everything is
   uncached and dynamic by default and `export const revalidate` / `dynamic` /
   `fetchCache` are **build errors**. A composition that prefetches marks
@@ -198,7 +201,7 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
 - Docker: multi-stage `Dockerfile` (standalone output via `DOCKER_BUILD=1`);
   `.env*` files are dockerignored — pass env at runtime
 - Docker builds have no `API_URL`, so the cached snapshot of `/` is built from
-  a failed prefetch and holds an empty React Query cache (`prefetchQuery`
+  a failed prefetch and holds an empty React Query cache (`.catch(noop)`
   swallows the error and `dehydrate()` keeps successful queries only). The
   page still works from the first request: `AppProviders` calls `io()`, so the
   browser gets the container's real `API_URL` and fetches client-side. The

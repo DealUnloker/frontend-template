@@ -1,4 +1,4 @@
-import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
+import { dehydrate, HydrationBoundary, noop } from '@tanstack/react-query'
 import { cacheLife } from 'next/cache'
 import { petQueries } from '@/entities/pet/api/pet.options'
 import { DEFAULT_PET_ID } from '@/features/select-pet/model/demo-pet-ids'
@@ -16,7 +16,12 @@ export async function HomePage() {
 	const { api } = await createBackendApiClients()
 	const queryClient = makeQueryClient()
 
-	await queryClient.prefetchQuery(petQueries.byId(api, DEFAULT_PET_ID))
+	// `.catch(noop)` is load-bearing, not defensive: the Docker image is built
+	// without API_URL, so this fetch fails and must not fail the build.
+	// `dehydrate()` then ships an empty cache, which the first background
+	// regeneration replaces. (prefetchQuery, which swallowed errors on its own,
+	// is deprecated in favour of query().)
+	await queryClient.query(petQueries.byId(api, DEFAULT_PET_ID)).catch(noop)
 
 	return (
 		<HydrationBoundary state={dehydrate(queryClient)}>
