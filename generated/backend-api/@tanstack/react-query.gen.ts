@@ -7,36 +7,36 @@ import { createPet, deletePet, getPetById, listPets, type Options, resetSandbox,
 import type { CreatePetData, CreatePetError, CreatePetResponse, DeletePetData, DeletePetError, DeletePetResponse, GetPetByIdData, GetPetByIdError, GetPetByIdResponse, ListPetsData, ListPetsError, ListPetsResponse, ResetSandboxData, ResetSandboxResponse, UpdatePetData, UpdatePetError, UpdatePetResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
-    Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
-        _id: string;
-        _infinite?: boolean;
-        tags?: ReadonlyArray<string>;
-    }
+  Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
+    _id: string;
+    _infinite?: boolean;
+    tags?: ReadonlyArray<string>;
+  }
 ];
 
 const createQueryKey = <TOptions extends Options>(id: string, options?: TOptions, infinite?: boolean, tags?: ReadonlyArray<string>): [
-    QueryKey<TOptions>[0]
+  QueryKey<TOptions>[0]
 ] => {
-    const params: QueryKey<TOptions>[0] = { _id: id, baseUrl: options?.baseUrl || (options?.client ?? client).getConfig().baseUrl } as QueryKey<TOptions>[0];
-    if (infinite) {
-        params._infinite = infinite;
-    }
-    if (tags) {
-        params.tags = tags;
-    }
-    if (options?.body) {
-        params.body = options.body;
-    }
-    if (options?.headers) {
-        params.headers = options.headers;
-    }
-    if (options?.path) {
-        params.path = options.path;
-    }
-    if (options?.query) {
-        params.query = options.query;
-    }
-    return [params];
+  const params: QueryKey<TOptions>[0] = { _id: id, baseUrl: options?.baseUrl || (options?.client ?? client).getConfig().baseUrl } as QueryKey<TOptions>[0];
+  if (infinite) {
+    params._infinite = infinite;
+  }
+  if (tags) {
+    params.tags = tags;
+  }
+  if (options?.body) {
+    params.body = options.body;
+  }
+  if (options?.headers) {
+    params.headers = options.headers;
+  }
+  if (options?.path) {
+    params.path = options.path;
+  }
+  if (options?.query) {
+    params.query = options.query;
+  }
+  return [params];
 };
 
 export const listPetsQueryKey = (options?: Options<ListPetsData>) => createQueryKey('listPets', options);
@@ -45,45 +45,45 @@ export const listPetsQueryKey = (options?: Options<ListPetsData>) => createQuery
  * List pets
  */
 export const listPetsOptions = (options?: Options<ListPetsData>) => queryOptions<ListPetsResponse, ListPetsError, ListPetsResponse, ReturnType<typeof listPetsQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await listPets({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: listPetsQueryKey(options)
+  queryFn: async ({ queryKey, signal }) => {
+    const { data } = await listPets({
+      ...options,
+      ...queryKey[0],
+      signal,
+      throwOnError: true
+    });
+    return data;
+  },
+  queryKey: listPetsQueryKey(options)
 });
 
 const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
-    const params = { ...queryKey[0] };
-    if (page.body) {
-        params.body = {
-            ...queryKey[0].body as any,
-            ...page.body as any
-        };
-    }
-    if (page.headers) {
-        params.headers = {
-            ...queryKey[0].headers,
-            ...page.headers
-        };
-    }
-    if (page.path) {
-        params.path = {
-            ...queryKey[0].path as any,
-            ...page.path as any
-        };
-    }
-    if (page.query) {
-        params.query = {
-            ...queryKey[0].query as any,
-            ...page.query as any
-        };
-    }
-    return params as unknown as typeof page;
+  const params = { ...queryKey[0] };
+  if (page.body) {
+    params.body = {
+      ...queryKey[0].body as any,
+      ...page.body as any
+    };
+  }
+  if (page.headers) {
+    params.headers = {
+      ...queryKey[0].headers,
+      ...page.headers
+    };
+  }
+  if (page.path) {
+    params.path = {
+      ...queryKey[0].path as any,
+      ...page.path as any
+    };
+  }
+  if (page.query) {
+    params.query = {
+      ...queryKey[0].query as any,
+      ...page.query as any
+    };
+  }
+  return params as unknown as typeof page;
 };
 
 export const listPetsInfiniteQueryKey = (options?: Options<ListPetsData>): QueryKey<Options<ListPetsData>> => createQueryKey('listPets', options, true);
@@ -92,62 +92,62 @@ export const listPetsInfiniteQueryKey = (options?: Options<ListPetsData>): Query
  * List pets
  */
 export const listPetsInfiniteOptions = (options?: Options<ListPetsData>) => {
-    const opts = infiniteQueryOptions<ListPetsResponse, ListPetsError, InfiniteData<ListPetsResponse>, QueryKey<Options<ListPetsData>>, number | Pick<QueryKey<Options<ListPetsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
-    // @ts-ignore
-    {
-        queryFn: async ({ pageParam, queryKey, signal }) => {
-            // @ts-ignore
-            const page: Pick<QueryKey<Options<ListPetsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
-                query: {
-                    offset: pageParam
-                }
-            };
-            const params = createInfiniteParams(queryKey, page);
-            const { data } = await listPets({
-                ...options,
-                ...params,
-                signal,
-                throwOnError: true
-            });
-            return data;
-        },
-        queryKey: listPetsInfiniteQueryKey(options)
-    });
-    return opts as Omit<typeof opts, 'initialData'>;
+  const opts = infiniteQueryOptions<ListPetsResponse, ListPetsError, InfiniteData<ListPetsResponse>, QueryKey<Options<ListPetsData>>, number | Pick<QueryKey<Options<ListPetsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+  // @ts-ignore
+  {
+    queryFn: async ({ pageParam, queryKey, signal }) => {
+      // @ts-ignore
+      const page: Pick<QueryKey<Options<ListPetsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+        query: {
+          offset: pageParam
+        }
+      };
+      const params = createInfiniteParams(queryKey, page);
+      const { data } = await listPets({
+        ...options,
+        ...params,
+        signal,
+        throwOnError: true
+      });
+      return data;
+    },
+    queryKey: listPetsInfiniteQueryKey(options)
+  });
+  return opts as Omit<typeof opts, 'initialData'>;
 };
 
 /**
  * Create a pet
  */
 export const createPetMutation = (options?: Partial<Options<CreatePetData>>): UseMutationOptions<CreatePetResponse, CreatePetError, Options<CreatePetData>> => {
-    const mutationOptions: UseMutationOptions<CreatePetResponse, CreatePetError, Options<CreatePetData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await createPet({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
+  const mutationOptions: UseMutationOptions<CreatePetResponse, CreatePetError, Options<CreatePetData>> = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await createPet({
+        ...options,
+        ...fnOptions,
+        throwOnError: true
+      });
+      return data;
+    }
+  };
+  return mutationOptions;
 };
 
 /**
  * Delete a pet
  */
 export const deletePetMutation = (options?: Partial<Options<DeletePetData>>): UseMutationOptions<DeletePetResponse, DeletePetError, Options<DeletePetData>> => {
-    const mutationOptions: UseMutationOptions<DeletePetResponse, DeletePetError, Options<DeletePetData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await deletePet({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
+  const mutationOptions: UseMutationOptions<DeletePetResponse, DeletePetError, Options<DeletePetData>> = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await deletePet({
+        ...options,
+        ...fnOptions,
+        throwOnError: true
+      });
+      return data;
+    }
+  };
+  return mutationOptions;
 };
 
 export const getPetByIdQueryKey = (options: Options<GetPetByIdData>) => createQueryKey('getPetById', options);
@@ -156,33 +156,33 @@ export const getPetByIdQueryKey = (options: Options<GetPetByIdData>) => createQu
  * Get a pet by id
  */
 export const getPetByIdOptions = (options: Options<GetPetByIdData>) => queryOptions<GetPetByIdResponse, GetPetByIdError, GetPetByIdResponse, ReturnType<typeof getPetByIdQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await getPetById({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: getPetByIdQueryKey(options)
+  queryFn: async ({ queryKey, signal }) => {
+    const { data } = await getPetById({
+      ...options,
+      ...queryKey[0],
+      signal,
+      throwOnError: true
+    });
+    return data;
+  },
+  queryKey: getPetByIdQueryKey(options)
 });
 
 /**
  * Update a pet
  */
 export const updatePetMutation = (options?: Partial<Options<UpdatePetData>>): UseMutationOptions<UpdatePetResponse, UpdatePetError, Options<UpdatePetData>> => {
-    const mutationOptions: UseMutationOptions<UpdatePetResponse, UpdatePetError, Options<UpdatePetData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await updatePet({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
+  const mutationOptions: UseMutationOptions<UpdatePetResponse, UpdatePetError, Options<UpdatePetData>> = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await updatePet({
+        ...options,
+        ...fnOptions,
+        throwOnError: true
+      });
+      return data;
+    }
+  };
+  return mutationOptions;
 };
 
 /**
@@ -191,15 +191,15 @@ export const updatePetMutation = (options?: Partial<Options<UpdatePetData>>): Us
  * Truncates all pets and restores the three canonical seed pets (ids 1-3). Intended for demos and test isolation.
  */
 export const resetSandboxMutation = (options?: Partial<Options<ResetSandboxData>>): UseMutationOptions<ResetSandboxResponse, DefaultError, Options<ResetSandboxData>> => {
-    const mutationOptions: UseMutationOptions<ResetSandboxResponse, DefaultError, Options<ResetSandboxData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await resetSandbox({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
+  const mutationOptions: UseMutationOptions<ResetSandboxResponse, DefaultError, Options<ResetSandboxData>> = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await resetSandbox({
+        ...options,
+        ...fnOptions,
+        throwOnError: true
+      });
+      return data;
+    }
+  };
+  return mutationOptions;
 };

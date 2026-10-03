@@ -93,11 +93,12 @@ win; do not "fix" the code toward the canonical guidance.
 
 ## Testing
 
-- **Vitest 4.1** + **Testing Library** (jsdom), config in `vitest.config.ts`
+- **Vitest 5** + **Testing Library** (jsdom), config in `vitest.config.ts`
   (`resolve.tsconfigPaths: true` resolves the `@/` and `@generated/` aliases).
-  The bundled `vitest` Agent Skill documents Vitest **5.x beta**: `vi.when`,
-  context-scoped `bench` and `toHaveBeenExhausted` do not exist here, and
-  `test.sequential` still works despite the skill calling it removed.
+  The bundled `vitest` Agent Skill was generated from the 5.x beta, but its
+  API matches 5.0 stable: `vi.when`, `toHaveBeenExhausted` and context-scoped
+  `bench` exist, `test.sequential` is gone (use `{ concurrent: false }`).
+  Vitest 5 also defaults `clearMocks` to `true`.
 - Tests are colocated with slices: `src/**/*.test.{ts,tsx}`
   (example: `src/entities/pet/ui/pet-card.test.tsx`).
 - **Playwright** e2e tests live in `e2e/` (`*.spec.ts`), config in
@@ -214,30 +215,29 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
 
 ## TypeScript 7
 
-The project stays on **TypeScript 6** on purpose. TS 7 (the Go-native port) is
-installable and `tsc --noEmit`, `next build`, Vitest and Playwright all pass
-under it, but two tools call JS compiler APIs the port no longer exposes:
+The project is on **TypeScript 7** (the Go-native port). `tsc --noEmit`,
+`next build` (it runs the project's `tsc` CLI), steiger, Vitest and
+Playwright all work under it with no config changes.
 
-- `@hey-api/openapi-ts` — **hard blocker**. `pnpm generate-api` dies with
-  `Cannot read properties of undefined (reading 'AnyKeyword')`: it builds the
-  client via the TS AST factory (`ts.SyntaxKind`). Its peer range
-  (`>=5.5.3 || >=6.0.0`) admits TS 7, so the failure only shows at runtime.
-- `steiger` — soft blocker. cosmiconfig loads `steiger.config.ts` through the
-  TS loader and hits `typescript.findConfigFile is not a function`. Renaming
-  the config to `steiger.config.mjs` sidesteps it (verified), at the cost of
-  config typings.
+`@hey-api/openapi-ts` is pinned **exactly** to a `next` snapshot
+(`0.0.0-next-20260930190945`). The tagged 0.99.x line builds the client
+through the JS compiler API (`ts.SyntaxKind`), which TS 7 no longer ships:
+`pnpm generate-api` dies with `Cannot read properties of undefined (reading
+'AnyKeyword')` (hey-api issue #4235). The snapshot has no TypeScript
+dependency at all. Its output differs from 0.99.0 only in indentation.
 
-A `pnpm.overrides` entry pinning hey-api's own TypeScript does **not** help:
-`typescript` is a peerDependency there, so a `parent>child` override rewrites
-the accepted range without installing a private copy, and the import fails
-identically. Escaping it needs either `@hey-api/openapi-ts@next` (its
-pre-release drops the TS compiler API entirely) or moving codegen into a
-nested package with its own `typescript@6`.
+- Keep the pin exact: a caret range would float to newer `next` snapshots,
+  whose output can change, and CI does not run codegen to catch it. After
+  bumping it, run `pnpm generate-api` and review the diff in `generated/`.
+- Dependabot ignores `@hey-api/openapi-ts` (`.github/dependabot.yml`): to
+  semver, `0.99.0` is newer than the snapshot, so it would "update" back to
+  the broken release, and CI does not run codegen to catch it. Lift the
+  ignore once a tagged release supports TS 7.
 
-Dependabot ignores `typescript >=7` (`.github/dependabot.yml`). Re-test with
-`pnpm generate-api` before lifting that ignore — hey-api is the gate. Worth
-re-checking then: `cosmiconfig@10` dropped its TypeScript dependency, so a
-steiger release that bumps it removes the config-rename workaround too.
+`steiger` 0.7 loads `steiger.config.ts` under TS 7 (cosmiconfig 10 dropped
+its TypeScript dependency). `pnpm-workspace.yaml` still widens the
+`tsconfck>typescript` peer range: `tsconfck` (via the steiger plugin) asks for
+`^5` and pnpm reports an unmet peer without it.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -11,11 +11,10 @@ updates:
           - minor
           - patch
     ignore:
-      # TS 7 (the Go port) drops parts of the JS compiler API that
-      # @hey-api/openapi-ts and steiger's config loader still call.
+      # Pinned to a `next` snapshot: 0.99.x still needs the TS compiler API
+      # that TS 7 dropped, and semver ranks 0.99.0 above the snapshot.
       # See the TypeScript 7 note in AGENTS.md before lifting this.
-      - dependency-name: typescript
-        versions: ['>=7']
+      - dependency-name: '@hey-api/openapi-ts'
 
   - package-ecosystem: github-actions
     directory: /
