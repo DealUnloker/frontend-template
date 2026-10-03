@@ -3,65 +3,65 @@
 import * as z from 'zod';
 
 export const zPetStatus = z.enum([
-    'available',
-    'pending',
-    'sold'
+  'available',
+  'pending',
+  'sold'
 ]);
 
 export const zPetSpecies = z.enum([
-    'dog',
-    'cat',
-    'bird',
-    'fish',
-    'other'
+  'dog',
+  'cat',
+  'bird',
+  'fish',
+  'other'
 ]);
 
 export const zPet = z.object({
-    id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
-    name: z.string(),
-    status: zPetStatus,
-    species: zPetSpecies,
-    breed: z.string().optional(),
-    photoUrl: z.string().optional(),
-    tags: z.array(z.string()),
-    createdAt: z.iso.datetime()
+  id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+  name: z.string(),
+  status: zPetStatus,
+  species: zPetSpecies,
+  breed: z.string().optional(),
+  photoUrl: z.string().optional(),
+  tags: z.array(z.string()),
+  createdAt: z.iso.datetime()
 });
 
 export const zPetList = z.object({
-    items: z.array(zPet),
-    total: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+  items: z.array(zPet),
+  total: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
 });
 
 export const zCreatePet = z.object({
-    name: z.string(),
-    species: zPetSpecies,
-    status: zPetStatus.optional(),
-    breed: z.string().optional(),
-    photoUrl: z.string().optional(),
-    tags: z.array(z.string()).optional()
+  name: z.string(),
+  species: zPetSpecies,
+  status: zPetStatus.optional(),
+  breed: z.string().optional(),
+  photoUrl: z.string().optional(),
+  tags: z.array(z.string()).optional()
 });
 
 export const zUpdatePet = z.object({
-    name: z.string().optional(),
-    species: zPetSpecies.optional(),
-    status: zPetStatus.optional(),
-    breed: z.string().optional(),
-    photoUrl: z.string().optional(),
-    tags: z.array(z.string()).optional()
+  name: z.string().optional(),
+  species: zPetSpecies.optional(),
+  status: zPetStatus.optional(),
+  breed: z.string().optional(),
+  photoUrl: z.string().optional(),
+  tags: z.array(z.string()).optional()
 });
 
 export const zError = z.object({
-    error: z.object({
-        code: z.string(),
-        message: z.string()
-    })
+  error: z.object({
+    code: z.string(),
+    message: z.string()
+  })
 });
 
 export const zListPetsQuery = z.object({
-    status: zPetStatus.optional(),
-    species: zPetSpecies.optional(),
-    limit: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional().default(20),
-    offset: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional().default(0)
+  status: zPetStatus.optional(),
+  species: zPetSpecies.optional(),
+  limit: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional().default(20),
+  offset: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional().default(0)
 });
 
 /**
@@ -77,7 +77,7 @@ export const zCreatePetBody = zCreatePet;
 export const zCreatePetResponse = zPet;
 
 export const zDeletePetPath = z.object({
-    petId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
+  petId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
 });
 
 /**
@@ -86,7 +86,7 @@ export const zDeletePetPath = z.object({
 export const zDeletePetResponse = z.void();
 
 export const zGetPetByIdPath = z.object({
-    petId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
+  petId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
 });
 
 /**
@@ -97,7 +97,7 @@ export const zGetPetByIdResponse = zPet;
 export const zUpdatePetBody = zUpdatePet;
 
 export const zUpdatePetPath = z.object({
-    petId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
+  petId: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
 });
 
 /**
@@ -109,6 +109,6 @@ export const zUpdatePetResponse = zPet;
  * Sandbox reset
  */
 export const zResetSandboxResponse = z.object({
-    reset: z.boolean(),
-    pets: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+  reset: z.boolean(),
+  pets: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
 });

@@ -6,70 +6,70 @@ import type { CreatePetData, CreatePetErrors, CreatePetResponses, DeletePetData,
 import { zCreatePetResponse, zDeletePetResponse, zGetPetByIdResponse, zListPetsResponse, zResetSandboxResponse, zUpdatePetResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
-    /**
-     * You can provide a client instance returned by `createClient()` instead of
-     * individual options. This might be also useful if you want to implement a
-     * custom client.
-     */
-    client?: Client;
-    /**
-     * You can pass arbitrary values through the `meta` object. This can be
-     * used to access values that aren't defined as part of the SDK function.
-     */
-    meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
+  /**
+   * You can provide a client instance returned by `createClient()` instead of
+   * individual options. This might be also useful if you want to implement a
+   * custom client.
+   */
+  client?: Client;
+  /**
+   * You can pass arbitrary values through the `meta` object. This can be
+   * used to access values that aren't defined as part of the SDK function.
+   */
+  meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
 
 /**
  * List pets
  */
 export const listPets = <ThrowOnError extends boolean = false>(options?: Options<ListPetsData, ThrowOnError>): RequestResult<ListPetsResponses, ListPetsErrors, ThrowOnError> => (options?.client ?? client).get<ListPetsResponses, ListPetsErrors, ThrowOnError>({
-    responseValidator: async (data) => await zListPetsResponse.parseAsync(data),
-    url: '/pets',
-    ...options
+  responseValidator: async (data) => await zListPetsResponse.parseAsync(data),
+  url: '/pets',
+  ...options
 });
 
 /**
  * Create a pet
  */
 export const createPet = <ThrowOnError extends boolean = false>(options: Options<CreatePetData, ThrowOnError>): RequestResult<CreatePetResponses, CreatePetErrors, ThrowOnError> => (options.client ?? client).post<CreatePetResponses, CreatePetErrors, ThrowOnError>({
-    responseValidator: async (data) => await zCreatePetResponse.parseAsync(data),
-    url: '/pets',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
+  responseValidator: async (data) => await zCreatePetResponse.parseAsync(data),
+  url: '/pets',
+  ...options,
+  headers: {
+    'Content-Type': 'application/json',
+    ...options.headers
+  }
 });
 
 /**
  * Delete a pet
  */
 export const deletePet = <ThrowOnError extends boolean = false>(options: Options<DeletePetData, ThrowOnError>): RequestResult<DeletePetResponses, DeletePetErrors, ThrowOnError> => (options.client ?? client).delete<DeletePetResponses, DeletePetErrors, ThrowOnError>({
-    responseValidator: async (data) => await zDeletePetResponse.parseAsync(data),
-    url: '/pets/{petId}',
-    ...options
+  responseValidator: async (data) => await zDeletePetResponse.parseAsync(data),
+  url: '/pets/{petId}',
+  ...options
 });
 
 /**
  * Get a pet by id
  */
 export const getPetById = <ThrowOnError extends boolean = false>(options: Options<GetPetByIdData, ThrowOnError>): RequestResult<GetPetByIdResponses, GetPetByIdErrors, ThrowOnError> => (options.client ?? client).get<GetPetByIdResponses, GetPetByIdErrors, ThrowOnError>({
-    responseValidator: async (data) => await zGetPetByIdResponse.parseAsync(data),
-    url: '/pets/{petId}',
-    ...options
+  responseValidator: async (data) => await zGetPetByIdResponse.parseAsync(data),
+  url: '/pets/{petId}',
+  ...options
 });
 
 /**
  * Update a pet
  */
 export const updatePet = <ThrowOnError extends boolean = false>(options: Options<UpdatePetData, ThrowOnError>): RequestResult<UpdatePetResponses, UpdatePetErrors, ThrowOnError> => (options.client ?? client).patch<UpdatePetResponses, UpdatePetErrors, ThrowOnError>({
-    responseValidator: async (data) => await zUpdatePetResponse.parseAsync(data),
-    url: '/pets/{petId}',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
+  responseValidator: async (data) => await zUpdatePetResponse.parseAsync(data),
+  url: '/pets/{petId}',
+  ...options,
+  headers: {
+    'Content-Type': 'application/json',
+    ...options.headers
+  }
 });
 
 /**
@@ -78,7 +78,7 @@ export const updatePet = <ThrowOnError extends boolean = false>(options: Options
  * Truncates all pets and restores the three canonical seed pets (ids 1-3). Intended for demos and test isolation.
  */
 export const resetSandbox = <ThrowOnError extends boolean = false>(options?: Options<ResetSandboxData, ThrowOnError>): RequestResult<ResetSandboxResponses, unknown, ThrowOnError> => (options?.client ?? client).post<ResetSandboxResponses, unknown, ThrowOnError>({
-    responseValidator: async (data) => await zResetSandboxResponse.parseAsync(data),
-    url: '/admin/reset',
-    ...options
+  responseValidator: async (data) => await zResetSandboxResponse.parseAsync(data),
+  url: '/admin/reset',
+  ...options
 });

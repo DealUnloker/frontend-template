@@ -2,11 +2,11 @@ allowBuilds:
   lefthook: true
   sharp: true
 minimumReleaseAge: 480
-# @hey-api/json-schema-ref-parser pins vulnerable js-yaml 4.2 (merge-key
-# quadratic CPU); drop once hey-api moves to >=4.3
+# @hey-api/json-schema-ref-parser pins js-yaml 5.3.0 (merge-key CPU,
+# GHSA-r3ph-w7gj-g6xm); drop once hey-api moves to >=5.4.1
 overrides:
-  js-yaml: ^4.3.0
+  '@hey-api/json-schema-ref-parser>js-yaml': ^5.4.1
 peerDependencyRules:
   allowedVersions:
-    # tsconfck (via steiger) wants typescript ^5; TS 6 works fine with it
+    # tsconfck (via steiger) wants typescript ^5; TS 7 works fine with it
     'tsconfck>typescript': '>=6'
