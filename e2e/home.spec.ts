@@ -1,14 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 
-test('the prerendered shell contains the page chrome', () => {
-	// The static shell is what Next serves before any request-time work. A
-	// provider that suspends above the page leaves only a placeholder in it,
-	// which no request-level assertion below would notice.
+test('the prerendered shell contains the page and the pet widget', () => {
+	// The static shell is what Next serves before any request-time work;
+	// anything missing from it arrives late, behind a fallback. A component
+	// drops out of it by suspending on runtime data or by reading the clock
+	// while rendering, and takes its whole Suspense boundary along.
 	const shell = readFileSync('.next/server/app/index.html', 'utf8')
 
 	expect(shell).toMatch(/<h1[^>]*>Mockzoo<\/h1>/)
-	expect(shell).toContain('Fetching pet details')
+	// The pet ID buttons need no API.
+	expect(shell).toContain('aria-pressed')
+	// The pet card needs the build to have reached the API.
+	expect(shell).toMatch(/lucide-paw-print/)
 })
 
 test('home page shows an SSR-prefetched pet', async ({ page }) => {
@@ -49,6 +53,48 @@ test('the home page is served from cache, not re-rendered per request', async ({
 
 	expect(stamp(first)).toBeDefined()
 	expect(stamp(second)).toBe(stamp(first))
+})
+
+test('selecting another pet loads it from the runtime API', async ({
+	page,
+}) => {
+	await page.goto('/')
+
+	// The browser client is created without a URL: the request waits for the
+	// one the server streams in, so this fails if that hand-off breaks.
+	const response = page.waitForResponse((res) =>
+		new URL(res.url()).pathname.endsWith('/pets/2'),
+	)
+	const second = page.getByRole('button', { name: '#2' })
+	// Retried: a click that lands before hydration is lost.
+	await expect(async () => {
+		await second.click()
+		await expect(second).toHaveAttribute('aria-pressed', 'true', {
+			timeout: 1000,
+		})
+	}).toPass()
+
+	const pet = await (await response).json()
+	// A response alone proves little: the card renders only data that passed
+	// response validation.
+	await expect(page.getByText(pet.name, { exact: true })).toBeVisible()
+})
+
+test.describe('without JavaScript', () => {
+	test.use({ javaScriptEnabled: false })
+
+	test('the pet widget is in the document, not revealed by a script', async ({
+		page,
+	}) => {
+		// Content streamed into a Suspense boundary stays hidden until React's
+		// inline script reveals it, and once the fallback has painted React
+		// holds that reveal for 300 ms. With scripts off, only what the
+		// document itself contains is visible.
+		await page.goto('/')
+
+		await expect(page.getByRole('button', { name: '#1' })).toBeVisible()
+		await expect(page.locator('.lucide-paw-print')).toBeVisible()
+	})
 })
 
 test('unknown route renders the 404 page', async ({ page }) => {

@@ -164,12 +164,19 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   (used by both the client provider and SSR prefetch). Its query/mutation caches log
   Zod response-validation failures via `src/shared/api/log-validation-error.ts` —
   in the browser console and in the server console during SSR prefetch, where
-  errors are otherwise swallowed.
+  errors are otherwise swallowed. On the server its `staleTime` is `'static'`:
+  a numeric one makes `useQuery` read the clock during render, which Cache
+  Components treats as request-time data, so the component leaves the static
+  shell together with its nearest Suspense boundary (under `app/loading.tsx`
+  that is the whole page). A query that sets its own numeric `staleTime`
+  brings this back — give that component its own `<Suspense>`.
 - **API client context** — `ApiClientProvider` + `useApiClient()` at `src/shared/api/`;
-  the provider takes a runtime URL promise and shares a client promise without
-  suspending. `useApiClient()` unwraps it with `use()`, so only consumers suspend.
-  Normalize the URL with `Promise.resolve()` before chaining: React Flight
-  thenables' `.then()` does not return a promise.
+  the provider takes a runtime URL promise and builds the clients at once;
+  their transport awaits the URL per request, so `useApiClient()` never
+  suspends and a consumer that reads cached data stays in the static shell.
+  `await` the URL, do not chain on it: React Flight thenables' `.then()` does
+  not return a promise. These clients carry no `baseURL`, so `api.getUrl()`
+  returns a path, not a full address.
   Server components use `createBackendApiClients()` from `src/shared/api/server-api-client.ts`.
 - **Entity QO pattern** — entity options wrap generated Kubb queryOptions and
   take the client as an argument (see `src/entities/pet/api/pet.options.ts`).
@@ -198,10 +205,11 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   Without one, the value is captured during prerendering and baked into the
   output. Synchronous `AppProviders` starts `getRuntimeApiUrl()` (which awaits
   `io()` before reading `API_URL`) and forwards its promise without awaiting it.
-  Keep the root layout free of a broad Suspense around providers: `HomePage`
-  wraps only `PetDetails` with a skeleton fallback, leaving the heading and
-  page chrome in the static HTML. On a request, resolving the URL lets
-  `PetDetails` render from the hydrated prefetch in the streamed server HTML.
+  Nothing on the page waits for that promise at render time, so `HomePage`
+  needs no Suspense of its own: the heading and `PetDetails`, rendered from
+  the hydrated prefetch, are both in the static HTML. Do not wrap such content
+  in a boundary "just in case" — once the fallback has painted, React holds
+  the reveal of streamed content for 300 ms, and every reload flashes it.
   `robots.ts` and `sitemap.ts` use `connection()` for `SITE_URL`.
 
 ## Environment
@@ -228,15 +236,16 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
 - Docker builds have no `API_URL`, so the cached snapshot of `/` is built from
   a failed prefetch and holds an empty React Query cache (`.catch(noop)`
   swallows the error and `dehydrate()` keeps successful queries only). The
-  page still works from the first request: the static shell contains the heading
-  and skeleton; `getRuntimeApiUrl()` resolves after `io()`, so the browser gets
-  the container's real `API_URL` and fetches client-side. Generated query keys
+  page still works from the first request: the static shell contains the
+  heading, the pet ID buttons and the widget's "Loading pet…" state; the
+  browser's request waits for the URL that `getRuntimeApiUrl()` resolves after
+  `io()`, so it goes to the container's real `API_URL`. Generated query keys
   hold the path template and params only (`[{ url: '/pets/:petId', params }]`),
   not the backend URL: when a build does prefetch successfully and the
   container then runs against a different backend, the browser hydrates the
   build backend's data under the same key instead of starting empty (not
   exercised yet). The first background regeneration past the 60s `revalidate` then restores SSR
-  data — verified by building an image with no `API_URL` and running it with
+  data — verified by building with no `API_URL` and starting that build with
   one. Note `cacheLife('minutes')` also sets `expire: 3600`, so a container
   with no traffic for an hour makes the next visitor wait on the API instead
   of being served a stale snapshot; the old `revalidate = 60` never expired

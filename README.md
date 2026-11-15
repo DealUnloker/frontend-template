@@ -73,9 +73,9 @@ prefetches via `createBackendApiClients()`) → `src/widgets/pet-details` (clien
 component, `useApiClient()` + `useQuery`) → `src/entities/pet` (query options
 wrapping the generated client). Synchronous `AppProviders` forwards a promise
 for the runtime `API_URL`, read after `io()`, through `ApiClientProvider`.
-Only `useApiClient()` consumers suspend: the home page heading and pet-details
-skeleton prerender, then `PetDetails` streams server-rendered content from the
-hydrated prefetch once the URL resolves. The runtime URL is absent from the
+The clients exist at once and each request awaits that URL, so nothing
+suspends at render time: the home page heading and `PetDetails`, rendered from
+the hydrated prefetch, are both in the prerendered HTML. The runtime URL is absent from the
 static HTML; generated query keys contain the path template and parameters,
 without the backend URL.
 

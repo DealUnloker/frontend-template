@@ -1,110 +1,132 @@
-import { act, render, screen } from '@testing-library/react'
-import { Component, type ReactNode, Suspense } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import type { ClientInstance } from '@generated/backend-api/.kubb/client'
+import { render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiClientProvider } from './api-client-provider'
 import { useApiClient } from './use-api-client'
 
-function ApiConsumer() {
-	const api = useApiClient('api')
-	return <p>{api.getConfig().baseURL}</p>
+const API_URL = 'https://runtime.example/v1'
+
+function ApiConsumer({
+	onClient,
+}: {
+	onClient: (api: ClientInstance) => void
+}) {
+	onClient(useApiClient('api'))
+	return <p>Consumer rendered</p>
 }
 
-class ErrorBoundary extends Component<
-	{ children: ReactNode },
-	{ failed: boolean }
-> {
-	override state = { failed: false }
-
-	static getDerivedStateFromError() {
-		return { failed: true }
-	}
-
-	override render() {
-		return this.state.failed ? <p>Failed</p> : this.props.children
+function renderClient(apiUrl: Promise<string>) {
+	const seen: ClientInstance[] = []
+	const tree = (url: Promise<string>) => (
+		<ApiClientProvider apiUrl={url}>
+			<ApiConsumer onClient={(api) => seen.push(api)} />
+		</ApiClientProvider>
+	)
+	const view = render(tree(apiUrl))
+	return {
+		client: () => seen.at(-1) as ClientInstance,
+		rerender: (url: Promise<string>) => view.rerender(tree(url)),
 	}
 }
+
+function stubFetch() {
+	const fetch = vi.fn(async (_request: Request) => Response.json({}))
+	vi.stubGlobal('fetch', fetch)
+	return fetch
+}
+
+afterEach(() => {
+	vi.unstubAllGlobals()
+})
 
 describe('ApiClientProvider', () => {
-	it('renders the shell while only API consumers await the runtime URL', async () => {
-		const { promise, resolve } = Promise.withResolvers<string>()
+	it('renders consumers before the runtime URL is known', () => {
+		// No Suspense boundary here: a consumer that suspended would throw.
+		renderClient(Promise.withResolvers<string>().promise)
 
-		await act(async () =>
-			render(
-				<ApiClientProvider apiUrl={promise}>
-					<h1>Static shell</h1>
-					<Suspense fallback={<p>Fetching details</p>}>
-						<ApiConsumer />
-					</Suspense>
-				</ApiClientProvider>,
-			),
-		)
-
-		expect(screen.getByRole('heading')).toHaveTextContent('Static shell')
-		expect(screen.getByText('Fetching details')).toBeInTheDocument()
-
-		await act(async () => {
-			resolve('https://runtime.example/v1')
-		})
-
-		expect(
-			screen.getByText('https://runtime.example/v1'),
-		).toBeInTheDocument()
-		expect(screen.queryByText('Fetching details')).not.toBeInTheDocument()
+		expect(screen.getByText('Consumer rendered')).toBeInTheDocument()
 	})
 
-	it('recovers when a rejected runtime URL is replaced', async () => {
-		const consoleError = vi
-			.spyOn(console, 'error')
-			.mockImplementation(() => {})
-		const tree = (apiUrl: Promise<string>, attempt: number) => (
-			<ApiClientProvider apiUrl={apiUrl}>
-				<ErrorBoundary key={attempt}>
-					<Suspense fallback={<p>Fetching details</p>}>
-						<ApiConsumer />
-					</Suspense>
-				</ErrorBoundary>
-			</ApiClientProvider>
+	it('holds a request until the runtime URL resolves', async () => {
+		const fetch = stubFetch()
+		const { promise, resolve } = Promise.withResolvers<string>()
+		const { client } = renderClient(promise)
+
+		const pending = client()({ url: '/pets/1', method: 'GET' })
+		await new Promise((done) => setTimeout(done))
+		expect(fetch).not.toHaveBeenCalled()
+
+		resolve(API_URL)
+		await pending
+
+		expect(fetch.mock.calls[0]?.[0].url).toBe(`${API_URL}/pets/1`)
+	})
+
+	it('does not double the slash after a base URL that ends in one', async () => {
+		const fetch = stubFetch()
+		const { client } = renderClient(Promise.resolve(`${API_URL}/`))
+
+		await client()({ url: '/pets/1', method: 'GET' })
+
+		expect(fetch.mock.calls[0]?.[0].url).toBe(`${API_URL}/pets/1`)
+	})
+
+	it('leaves an already absolute request URL alone', async () => {
+		const fetch = stubFetch()
+		const { client } = renderClient(Promise.resolve(API_URL))
+
+		await client()({
+			baseURL: 'https://override.example/v2',
+			url: '/pets/1',
+			method: 'GET',
+		})
+
+		expect(fetch.mock.calls[0]?.[0].url).toBe(
+			'https://override.example/v2/pets/1',
+		)
+	})
+
+	it('fails requests while the runtime URL is rejected and recovers with a new one', async () => {
+		const fetch = stubFetch()
+		const { client, rerender } = renderClient(
+			Promise.reject(new Error('stream closed')),
 		)
 
-		const view = await act(async () =>
-			render(tree(Promise.reject(new Error('stream closed')), 1)),
-		)
-		expect(screen.getByText('Failed')).toBeInTheDocument()
+		await expect(
+			client()({ url: '/pets/1', method: 'GET' }),
+		).rejects.toThrow('stream closed')
+		expect(fetch).not.toHaveBeenCalled()
 
-		// What an error-boundary retry does: a fresh promise from the server.
-		await act(async () =>
-			view.rerender(
-				tree(Promise.resolve('https://runtime.example/v1'), 2),
-			),
-		)
-		expect(
-			screen.getByText('https://runtime.example/v1'),
-		).toBeInTheDocument()
+		// What a retry does: a fresh promise from the server.
+		rerender(Promise.resolve(API_URL))
+		await client()({ url: '/pets/1', method: 'GET' })
 
-		consoleError.mockRestore()
+		expect(fetch).toHaveBeenCalledOnce()
+	})
+
+	it('keeps the same client while the URL promise is the same', () => {
+		const apiUrl = Promise.resolve(API_URL)
+		const { client, rerender } = renderClient(apiUrl)
+		const first = client()
+
+		rerender(apiUrl)
+
+		expect(client()).toBe(first)
 	})
 
 	it('accepts a Flight thenable without a chainable then method', async () => {
+		const fetch = stubFetch()
 		// React Flight transports promises as thenables, not native Promises.
 		const apiUrl = {
 			// biome-ignore lint/suspicious/noThenProperty: Emulate Flight's non-chainable thenable.
 			then(resolve: (value: string) => void) {
-				resolve('https://runtime.example/v1')
+				resolve(API_URL)
 			},
 		} as unknown as Promise<string>
+		const { client } = renderClient(apiUrl)
 
-		await act(async () => {
-			render(
-				<ApiClientProvider apiUrl={apiUrl}>
-					<Suspense fallback={<p>Fetching details</p>}>
-						<ApiConsumer />
-					</Suspense>
-				</ApiClientProvider>,
-			)
-		})
+		await client()({ url: '/pets/1', method: 'GET' })
 
-		expect(
-			screen.getByText('https://runtime.example/v1'),
-		).toBeInTheDocument()
+		expect(fetch.mock.calls[0]?.[0].url).toBe(`${API_URL}/pets/1`)
 	})
 })
