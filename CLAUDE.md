@@ -51,6 +51,9 @@ HTML comments are stripped before injection, so this block costs no context.
 No MCP server exists for Biome, Zod, steiger, Hey API or TanStack Query —
 `pnpm verify` is the interface for those.
 
+`.codex/config.toml` declares the same three servers for Codex — change both
+files together.
+
 ### Permissions and skills
 
 - `.claude/settings.json` denies reading `.env*` secrets, pre-approves the

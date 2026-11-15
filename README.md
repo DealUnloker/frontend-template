@@ -149,7 +149,9 @@ a `disabledMcpjsonServers` entry to your own settings.
 
 ## AI tooling (MCP)
 
-`.mcp.json` ships three project-scoped MCP servers for AI assistants:
+`.mcp.json` ships three project-scoped MCP servers for AI assistants;
+`.codex/config.toml` declares the same three for Codex. Change both files
+together.
 
 - **next-devtools** — version-matched Next.js docs (offline, from
   `node_modules`) plus live dev-server state: real routes, compilation issues,
