@@ -87,6 +87,11 @@ linter preset with the a11y rules on (`biome.json`). `pnpm lint` formats.
 - **pre-commit**: Biome check + auto-fix on staged files
 - **pre-push**: type-check (`pnpm tsc`) + FSD validation (`pnpm run fsd`)
 - **CI** (`.github/workflows/ci.yml`): lint → tsc → fsd → tests → build → e2e on push/PR
+- **Releases** are cut by hand with pnpm's own command, no release tooling:
+  `pnpm version <patch|minor|major> -m 'Release v%s'` bumps `version` in
+  `package.json`, commits and tags `v…`; then `git push --follow-tags` and
+  `gh release create v… --generate-notes`. Generated notes list merged PRs
+  only: describe directly pushed work with `--notes`, it is put above them.
 
 ## Testing
 
