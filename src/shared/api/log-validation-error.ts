@@ -1,4 +1,5 @@
-import { ZodError, z } from 'zod'
+import { ParseError } from '@generated/backend-api/.kubb/standardSchema'
+import { z } from 'zod'
 
 /**
  * Logs Zod response-validation failures. Wired into the React Query
@@ -6,9 +7,16 @@ import { ZodError, z } from 'zod'
  * (SSR prefetch), where errors would otherwise be swallowed silently.
  */
 export function logValidationError(error: unknown, source: string) {
-	if (!(error instanceof ZodError)) return
+	if (!(error instanceof ParseError)) return
+
+	// The generated client throws Standard Schema issues, whose `message` is
+	// optional; Zod's formatter requires it.
+	const issues = error.issues.map((issue) => ({
+		...issue,
+		message: issue.message ?? 'Invalid value',
+	}))
 
 	console.error(
-		`[api] Response validation failed — ${source}\n${z.prettifyError(error)}`,
+		`[api] Response validation failed — ${source}\n${z.prettifyError({ issues })}`,
 	)
 }

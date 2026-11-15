@@ -6,7 +6,7 @@ import { useApiClient } from './use-api-client'
 
 function ApiConsumer() {
 	const api = useApiClient('api')
-	return <p>{api.getConfig().baseUrl}</p>
+	return <p>{api.getConfig().baseURL}</p>
 }
 
 class ErrorBoundary extends Component<

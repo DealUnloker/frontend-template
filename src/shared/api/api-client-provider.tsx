@@ -1,7 +1,6 @@
 'use client'
 
-import type { ClientOptions } from '@generated/backend-api'
-import { createClient, createConfig } from '@generated/backend-api/client'
+import { createClient } from '@generated/backend-api/.kubb/client'
 import { createContext, type ReactNode } from 'react'
 import type { ApiClients } from './types'
 
@@ -9,11 +8,7 @@ export const ApiClientContext = createContext<Promise<ApiClients> | null>(null)
 
 function createClients(apiUrl: string): ApiClients {
 	return {
-		api: createClient(
-			createConfig<ClientOptions>({
-				baseUrl: apiUrl,
-			}),
-		),
+		api: createClient({ baseURL: apiUrl }),
 	}
 }
 

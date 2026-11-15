@@ -17,7 +17,7 @@
 		"test:coverage": "vitest run --coverage",
 		"test:e2e": "playwright test",
 		"fsd": "steiger ./src",
-		"generate-api": "openapi-ts",
+		"generate-api": "kubb generate",
 		"postinstall": "lefthook install"
 	},
 	"dependencies": {
@@ -38,7 +38,11 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.6.7",
 		"@feature-sliced/steiger-plugin": "^0.8.2",
-		"@hey-api/openapi-ts": "0.0.0-next-20260930190945",
+		"@kubb/adapter-oas": "5.20.1",
+		"@kubb/plugin-fetch": "6.0.3",
+		"@kubb/plugin-react-query": "5.10.3",
+		"@kubb/plugin-ts": "5.5.3",
+		"@kubb/plugin-zod": "5.9.3",
 		"@playwright/test": "^1.65.1",
 		"@tailwindcss/postcss": "^4.3.5",
 		"@tailwindcss/typography": "^0.5.20",
@@ -51,6 +55,7 @@
 		"@vitest/coverage-v8": "^5.1.0",
 		"babel-plugin-react-compiler": "^1.0.0",
 		"jsdom": "^31.0.1",
+		"kubb": "5.20.1",
 		"lefthook": "^2.2.2",
 		"shadcn": "^4.23.0",
 		"steiger": "^0.10.0",

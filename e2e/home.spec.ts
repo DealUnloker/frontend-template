@@ -27,8 +27,9 @@ test('pet data is server-rendered, not fetched by the browser', async ({
 	const html = await (await request.get('/')).text()
 
 	// The dehydrated cache only reaches the HTML when the server prefetch ran
-	// and succeeded — dehydrate() keeps successful queries only.
-	expect(html).toMatch(/getPetById/)
+	// and succeeded — dehydrate() keeps successful queries only. The marker
+	// is the generated query key of the pet query.
+	expect(html).toMatch(/\/pets\/:petId/)
 
 	// PetCard renders only once the query has data, and its icon appears
 	// nowhere else on the page.

@@ -12,7 +12,8 @@
 - `pnpm build` — production build; fills the `'use cache'` snapshot of `/`
   against the live API
 - `pnpm dev` — dev server (long-running; don't start it just to check something)
-- `pnpm generate-api` — regenerate the API client from the OpenAPI spec (Hey API)
+- `pnpm generate-api` — regenerate the API client from the OpenAPI spec (Kubb,
+  into `generated/backend-api/`).
 
 Install dependencies only with `pnpm add`. Agent Skills bundled in
 `.agents/skills/` sometimes give `npm i -g` / `npx` instructions — translate
@@ -135,14 +136,25 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
 
 ## Data fetching
 
-- **Hey API (OpenAPI-TS)** — generates typed client, Zod schemas, and React
-  Query options from the OpenAPI spec into `generated/backend-api/`. Spec URL
-  is `${API_URL}/${SPEC_PATH}` (see `openapi-ts.config.ts`); `API_URL` comes
+- **Kubb v5** — generates types, Zod schemas, a fetch client and React Query
+  options from the OpenAPI spec into `generated/backend-api/` (`types/`, `zod/`,
+  `clients/`, `hooks/`, runtime in `.kubb/`). Spec URL
+  is `${API_URL}/${SPEC_PATH}` (see `kubb.config.ts`); `API_URL` comes
   from the validated env (`src/shared/config/env.ts`), so generation needs
   `API_URL` in the environment or the optional `.env.local`. Note: the config
   imports env via a relative path,
   not the `@/` alias — jiti (the config loader) doesn't resolve tsconfig paths.
-  Zod response validation is enabled. Note: Mockzoo is our own backend and is
+  Three config choices are load-bearing: `integerType: 'number'` (the default
+  maps int64 to `bigint`, which query keys and JSON cannot carry),
+  `hooks: true` (without the hooks the output has an unused `*QueryKey` type
+  and fails `noUnusedLocals`; the generated `use*` hooks themselves are not
+  used — go through entity options), and the telemetry opt-out at the top of
+  the file (the CLI otherwise posts plugin names and options to
+  `otlp.kubb.dev`).
+  Zod response validation is enabled (`validator: { response: 'zod' }`); the
+  client also validates documented error bodies, and a mismatch throws
+  `ParseError` from `generated/backend-api/.kubb/standardSchema`, while a well-formed
+  non-2xx throws `ResponseError`. Note: Mockzoo is our own backend and is
   spec-compliant by construction, so a validation failure here now points at
   a real Mockzoo bug rather than sandbox rot — the demo still fetches pets by
   ID from a known-good list of stable seed pets, restorable via
@@ -159,8 +171,11 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   Normalize the URL with `Promise.resolve()` before chaining: React Flight
   thenables' `.then()` does not return a promise.
   Server components use `createBackendApiClients()` from `src/shared/api/server-api-client.ts`.
-- **Entity QO pattern** — entity options wrap generated Hey API queryOptions and
+- **Entity QO pattern** — entity options wrap generated Kubb queryOptions and
   take the client as an argument (see `src/entities/pet/api/pet.options.ts`).
+  Clients come from `createClient({ baseURL })`, which returns an isolated
+  instance; the default `client` exported by `.kubb/client` has no base URL and
+  is never configured — do not call `client.setConfig()`.
 - **SSR prefetch** — server page compositions use `QueryClient` +
   `query(...).catch(noop)` + `dehydrate` + `HydrationBoundary` (see
   `src/pages/home/ui/home-page.tsx`). `prefetchQuery` is deprecated in
@@ -176,7 +191,7 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   keeps it off the prerender path — it just refetches every request.
   The directive cannot move deeper than the composition: `'use cache'` takes
   only serializable arguments and return values, and `QueryClient` and the
-  Hey API client are neither.
+  API client are neither.
 - **Reading runtime state** — anything that must observe the environment per
   request needs `await io()` (from `next/cache`) or, in a route handler that
   should wait for a real request, `await connection()` (from `next/server`).
@@ -215,11 +230,12 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   swallows the error and `dehydrate()` keeps successful queries only). The
   page still works from the first request: the static shell contains the heading
   and skeleton; `getRuntimeApiUrl()` resolves after `io()`, so the browser gets
-  the container's real `API_URL` and fetches client-side. When a build does
-  prefetch successfully, its RSC snapshot includes the build backend URL in
-  generated query keys/hashes; this is cache metadata, not the runtime client
-  configuration. Changing the runtime backend uses different query keys. The
-  first background regeneration past the 60s `revalidate` then restores SSR
+  the container's real `API_URL` and fetches client-side. Generated query keys
+  hold the path template and params only (`[{ url: '/pets/:petId', params }]`),
+  not the backend URL: when a build does prefetch successfully and the
+  container then runs against a different backend, the browser hydrates the
+  build backend's data under the same key instead of starting empty (not
+  exercised yet). The first background regeneration past the 60s `revalidate` then restores SSR
   data — verified by building an image with no `API_URL` and running it with
   one. Note `cacheLife('minutes')` also sets `expire: 3600`, so a container
   with no traffic for an hour makes the next visitor wait on the API instead
@@ -232,20 +248,10 @@ The project is on **TypeScript 7** (the Go-native port). `tsc --noEmit`,
 `next build` (it runs the project's `tsc` CLI), steiger, Vitest and
 Playwright all work under it with no config changes.
 
-`@hey-api/openapi-ts` is pinned **exactly** to a `next` snapshot
-(`0.0.0-next-20260930190945`). The tagged 0.99.x line builds the client
-through the JS compiler API (`ts.SyntaxKind`), which TS 7 no longer ships:
-`pnpm generate-api` dies with `Cannot read properties of undefined (reading
-'AnyKeyword')` (hey-api issue #4235). The snapshot has no TypeScript
-dependency at all. Its output differs from 0.99.0 only in indentation.
-
-- Keep the pin exact: a caret range would float to newer `next` snapshots,
-  whose output can change, and CI does not run codegen to catch it. After
-  bumping it, run `pnpm generate-api` and review the diff in `generated/`.
-- Dependabot ignores `@hey-api/openapi-ts` (`.github/dependabot.yml`): to
-  semver, `0.99.0` is newer than the snapshot, so it would "update" back to
-  the broken release, and CI does not run codegen to catch it. Lift the
-  ignore once a tagged release supports TS 7.
+Kubb has no dependency on the TypeScript compiler API: its stock plugins
+print code directly. All `kubb` / `@kubb/*` packages are pinned exactly
+because CI does not run codegen. After bumping them, run `pnpm generate-api`
+and review the diff in `generated/`.
 
 `steiger` 0.7+ loads `steiger.config.ts` under TS 7 (cosmiconfig 10 dropped
 its TypeScript dependency). `pnpm-workspace.yaml` still widens the

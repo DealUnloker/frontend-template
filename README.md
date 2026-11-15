@@ -7,7 +7,7 @@ client, and strict tooling out of the box.
 
 - **Next.js 16** — App Router, React 19, Cache Components and React Compiler enabled
 - **Feature-Sliced Design** — validated with [steiger](https://github.com/feature-sliced/steiger)
-- **Hey API (OpenAPI-TS)** — typed API client + Zod schemas + React Query options generated from an OpenAPI spec
+- **Kubb** — typed API client + Zod schemas + React Query options generated from an OpenAPI spec
 - **TanStack React Query v5** — with SSR prefetch/hydration wired up
 - **Tailwind CSS v4** + **shadcn** (base-nova, Base UI primitives)
 - **Biome** — lint + format (tabs, single quotes, no semicolons)
@@ -33,7 +33,7 @@ ids 1-3), so it works immediately after clone.
 ### Connecting your own API
 
 1. Set `API_URL` in `.env.local` to your backend base URL.
-2. Adjust `SPEC_PATH` in `openapi-ts.config.ts` if your spec lives elsewhere than `${API_URL}/openapi.json`.
+2. Adjust `SPEC_PATH` in `kubb.config.ts` if your spec lives elsewhere than `${API_URL}/openapi.json`.
 3. Regenerate the client: `pnpm generate-api`.
 4. Replace the example `pet` slices (`src/entities/pet`, `src/features/select-pet`, `src/widgets/pet-details`, `src/pages/home`) with your own.
 
@@ -76,8 +76,8 @@ for the runtime `API_URL`, read after `io()`, through `ApiClientProvider`.
 Only `useApiClient()` consumers suspend: the home page heading and pet-details
 skeleton prerender, then `PetDetails` streams server-rendered content from the
 hydrated prefetch once the URL resolves. The runtime URL is absent from the
-static HTML; successful prefetches still record their backend URL in the RSC
-snapshot's generated query keys.
+static HTML; generated query keys contain the path template and parameters,
+without the backend URL.
 
 ## E2E tests
 

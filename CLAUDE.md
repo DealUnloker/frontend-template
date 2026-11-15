@@ -17,7 +17,7 @@ Authoring rule for both files: the import parser skips Markdown code spans and
 fenced blocks, but treats a bare @token elsewhere as a live file import. This
 repo's FSD path alias IS `@/`, so always keep @-prefixed tokens inside
 backticks — `@/entities/pet/api/pet.options`, `@generated/*`,
-`@hey-api/openapi-ts`, `shadcn@latest`. A bare @package.json in prose would
+`@kubb/plugin-ts`, `shadcn@latest`. A bare @package.json in prose would
 silently pull that whole file into context.
 
 Project rules go in AGENTS.md, which Codex, Cursor, Copilot, Gemini CLI, Zed
@@ -45,11 +45,12 @@ HTML comments are stripped before injection, so this block costs no context.
   v2-era Radix imports. Do NOT run `shadcn mcp init` — it overwrites
   `.mcp.json` wholesale.
 - **`context7`** — hosted docs retrieval, no API key. Covers the libraries
-  that have no MCP server of their own (TanStack Query, Tailwind, Base UI,
-  Biome, Vitest, Zod, Hey API, steiger).
+  that have no MCP server wired here (TanStack Query, Tailwind, Base UI,
+  Biome, Vitest, Zod, Kubb, steiger).
 
-No MCP server exists for Biome, Zod, steiger, Hey API or TanStack Query —
-`pnpm verify` is the interface for those.
+No MCP server exists for Biome, Zod, steiger or TanStack Query —
+`pnpm verify` is the interface for those. Kubb ships one (`kubb mcp`); it is
+not wired here.
 
 `.codex/config.toml` declares the same three servers for Codex — change both
 files together.

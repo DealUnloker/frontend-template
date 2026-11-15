@@ -1,5 +1,5 @@
-import type { Client } from '@generated/backend-api/client'
+import type { ClientInstance } from '@generated/backend-api/.kubb/client'
 
 export interface ApiClients {
-	api: Client
+	api: ClientInstance
 }

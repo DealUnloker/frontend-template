@@ -56,23 +56,23 @@ stub; do not delete it.
 
 ## 4. Entity data access: the query-options pattern
 
-Entity options wrap the generated Hey API `queryOptions` and take the client as
+Entity options wrap the generated Kubb `queryOptions` and take the client as
 an argument, so the same options work on the server and in the browser.
 
 ```ts
 // src/entities/<slice>/api/<slice>.options.ts
-import { getThingByIdOptions } from '@generated/backend-api/@tanstack/react-query.gen'
-import type { Client } from '@generated/backend-api/client'
+import type { ClientInstance } from '@generated/backend-api/.kubb/client'
+import { getThingByIdQueryOptions } from '@generated/backend-api/hooks/useGetThingById'
 
 export const thingQueries = {
-	byId: (client: Client, id: number) =>
-		getThingByIdOptions({ client, path: { id } }),
+	byId: (client: ClientInstance, id: number) =>
+		getThingByIdQueryOptions({ path: { id } }, { client }),
 }
 ```
 
 Consumers get the client from `useApiClient('api')` in client components, or
 `createBackendApiClients()` in server components. Never import the generated
-client directly into a component.
+client or the generated `use*` hooks directly into a component.
 
 ## 5. Wire it into a route
 
@@ -101,7 +101,7 @@ Caching is opt-in, not opt-out — everything is uncached by default:
   ```
 
   The directive has to sit here and not deeper: `'use cache'` only accepts
-  serializable arguments and return values, and `QueryClient` and the Hey API
+  serializable arguments and return values, and `QueryClient` and the API
   client are neither. Without it the route still works — `app/loading.tsx` is
   the Suspense boundary that keeps it from blocking the prerender — it is just
   refetched on every request.
