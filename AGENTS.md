@@ -175,8 +175,11 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   their transport awaits the URL per request, so `useApiClient()` never
   suspends and a consumer that reads cached data stays in the static shell.
   `await` the URL, do not chain on it: React Flight thenables' `.then()` does
-  not return a promise. These clients carry no `baseURL`, so `api.getUrl()`
-  returns a path, not a full address.
+  not return a promise. These clients carry no `baseURL`: `api.getUrl()`
+  returns a path, not a full address, and a per-request `baseURL` is not
+  supported (the runtime URL would be put in front of it) — another backend
+  gets its own client in `ApiClients`. The provider does not cache the
+  clients by hand; React Compiler memoizes them on the URL promise.
   Server components use `createBackendApiClients()` from `src/shared/api/server-api-client.ts`.
 - **Entity QO pattern** — entity options wrap generated Kubb queryOptions and
   take the client as an argument (see `src/entities/pet/api/pet.options.ts`).

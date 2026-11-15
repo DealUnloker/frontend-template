@@ -71,21 +71,6 @@ describe('ApiClientProvider', () => {
 		expect(fetch.mock.calls[0]?.[0].url).toBe(`${API_URL}/pets/1`)
 	})
 
-	it('leaves an already absolute request URL alone', async () => {
-		const fetch = stubFetch()
-		const { client } = renderClient(Promise.resolve(API_URL))
-
-		await client()({
-			baseURL: 'https://override.example/v2',
-			url: '/pets/1',
-			method: 'GET',
-		})
-
-		expect(fetch.mock.calls[0]?.[0].url).toBe(
-			'https://override.example/v2/pets/1',
-		)
-	})
-
 	it('fails requests while the runtime URL is rejected and recovers with a new one', async () => {
 		const fetch = stubFetch()
 		const { client, rerender } = renderClient(
@@ -102,16 +87,6 @@ describe('ApiClientProvider', () => {
 		await client()({ url: '/pets/1', method: 'GET' })
 
 		expect(fetch).toHaveBeenCalledOnce()
-	})
-
-	it('keeps the same client while the URL promise is the same', () => {
-		const apiUrl = Promise.resolve(API_URL)
-		const { client, rerender } = renderClient(apiUrl)
-		const first = client()
-
-		rerender(apiUrl)
-
-		expect(client()).toBe(first)
 	})
 
 	it('accepts a Flight thenable without a chainable then method', async () => {
