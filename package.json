@@ -26,8 +26,8 @@
 		"@tanstack/react-query": "^5.107.1",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
-		"lucide-react": "^1.70.0",
-		"next": "16.4.5",
+		"lucide-react": "^1.73.0",
+		"next": "16.4.6",
 		"react": "19.3.1",
 		"react-dom": "19.3.1",
 		"shadcn": "^4.23.0",
@@ -37,10 +37,10 @@
 		"zod": "^4.6.7"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.6.6",
+		"@biomejs/biome": "^2.6.7",
 		"@feature-sliced/steiger-plugin": "^0.8.2",
 		"@hey-api/openapi-ts": "0.0.0-next-20260930190945",
-		"@playwright/test": "^1.65.0",
+		"@playwright/test": "^1.65.1",
 		"@tailwindcss/postcss": "^4.3.5",
 		"@tailwindcss/typography": "^0.5.20",
 		"@testing-library/jest-dom": "^7.0.1",
@@ -48,17 +48,17 @@
 		"@types/node": "^26.6.6",
 		"@types/react": "^19.3.0",
 		"@types/react-dom": "^19.3.0",
-		"@vitejs/plugin-react": "^6.2.1",
+		"@vitejs/plugin-react": "^6.3.0",
 		"@vitest/coverage-v8": "^5.1.0",
 		"babel-plugin-react-compiler": "^1.0.0",
-		"jsdom": "^30.1.3",
+		"jsdom": "^31.0.1",
 		"lefthook": "^2.2.2",
-		"steiger": "^0.9.0",
+		"steiger": "^0.10.0",
 		"tailwindcss": "^4.3.5",
 		"typescript": "^7.0.2",
 		"vitest": "^5.1.0"
 	},
-	"packageManager": "pnpm@11.28.3",
+	"packageManager": "pnpm@12.21.0",
 	"engines": {
 		"node": ">=24"
 	}

@@ -211,7 +211,7 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   one. Note `cacheLife('minutes')` also sets `expire: 3600`, so a container
   with no traffic for an hour makes the next visitor wait on the API instead
   of being served a stale snapshot; the old `revalidate = 60` never expired
-- Node >= 24, pnpm 11
+- Node >= 24, pnpm 12
 
 ## TypeScript 7
 
@@ -234,7 +234,7 @@ dependency at all. Its output differs from 0.99.0 only in indentation.
   the broken release, and CI does not run codegen to catch it. Lift the
   ignore once a tagged release supports TS 7.
 
-`steiger` 0.7 loads `steiger.config.ts` under TS 7 (cosmiconfig 10 dropped
+`steiger` 0.7+ loads `steiger.config.ts` under TS 7 (cosmiconfig 10 dropped
 its TypeScript dependency). `pnpm-workspace.yaml` still widens the
 `tsconfck>typescript` peer range: `tsconfck` (via the steiger plugin) asks for
 `^5` and pnpm reports an unmet peer without it.

@@ -155,7 +155,7 @@ a `disabledMcpjsonServers` entry to your own settings.
 ## Requirements
 
 - Node >= 24 (`.nvmrc`)
-- pnpm 11
+- pnpm 12
 
 ## License
 
