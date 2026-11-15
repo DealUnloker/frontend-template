@@ -71,7 +71,13 @@ src/
 Example data flow: `app/page.tsx` → `src/pages/home` (server component,
 prefetches via `createBackendApiClients()`) → `src/widgets/pet-details` (client
 component, `useApiClient()` + `useQuery`) → `src/entities/pet` (query options
-wrapping the generated client).
+wrapping the generated client). Synchronous `AppProviders` forwards a promise
+for the runtime `API_URL`, read after `io()`, through `ApiClientProvider`.
+Only `useApiClient()` consumers suspend: the home page heading and pet-details
+skeleton prerender, then `PetDetails` streams server-rendered content from the
+hydrated prefetch once the URL resolves. The runtime URL is absent from the
+static HTML; successful prefetches still record their backend URL in the RSC
+snapshot's generated query keys.
 
 ## E2E tests
 

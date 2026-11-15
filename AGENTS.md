@@ -154,7 +154,11 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   in the browser console and in the server console during SSR prefetch, where
   errors are otherwise swallowed.
 - **API client context** — `ApiClientProvider` + `useApiClient()` at `src/shared/api/`;
-  server components use `createBackendApiClients()` from `src/shared/api/server-api-client.ts`.
+  the provider takes a runtime URL promise and shares a client promise without
+  suspending. `useApiClient()` unwraps it with `use()`, so only consumers suspend.
+  Normalize the URL with `Promise.resolve()` before chaining: React Flight
+  thenables' `.then()` does not return a promise.
+  Server components use `createBackendApiClients()` from `src/shared/api/server-api-client.ts`.
 - **Entity QO pattern** — entity options wrap generated Hey API queryOptions and
   take the client as an argument (see `src/entities/pet/api/pet.options.ts`).
 - **SSR prefetch** — server page compositions use `QueryClient` +
@@ -177,15 +181,19 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
   request needs `await io()` (from `next/cache`) or, in a route handler that
   should wait for a real request, `await connection()` (from `next/server`).
   Without one, the value is captured during prerendering and baked into the
-  output. `AppProviders` uses `io()` so `API_URL` reaches the browser as the
-  value the container was started with; `robots.ts` and `sitemap.ts` use
-  `connection()` for `SITE_URL`.
+  output. Synchronous `AppProviders` starts `getRuntimeApiUrl()` (which awaits
+  `io()` before reading `API_URL`) and forwards its promise without awaiting it.
+  Keep the root layout free of a broad Suspense around providers: `HomePage`
+  wraps only `PetDetails` with a skeleton fallback, leaving the heading and
+  page chrome in the static HTML. On a request, resolving the URL lets
+  `PetDetails` render from the hydrated prefetch in the streamed server HTML.
+  `robots.ts` and `sitemap.ts` use `connection()` for `SITE_URL`.
 
 ## Environment
 
 - Validated via t3-env in `src/shared/config/env.ts` (`API_URL` required, server-only).
 - `API_URL` is intentionally NOT `NEXT_PUBLIC_`: it stays swappable at container
-  runtime (no build-time inlining) while still reaching the browser as a prop
+  runtime (no build-time inlining) while still reaching the browser as a promise prop
   through `ApiClientProvider` (SSR prefetch on the server, direct API calls on
   the client). Do not convert it to a public env var.
 - `SITE_URL` (optional, server-only, defaults to `http://localhost:3000`) —
@@ -205,8 +213,12 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
 - Docker builds have no `API_URL`, so the cached snapshot of `/` is built from
   a failed prefetch and holds an empty React Query cache (`.catch(noop)`
   swallows the error and `dehydrate()` keeps successful queries only). The
-  page still works from the first request: `AppProviders` calls `io()`, so the
-  browser gets the container's real `API_URL` and fetches client-side. The
+  page still works from the first request: the static shell contains the heading
+  and skeleton; `getRuntimeApiUrl()` resolves after `io()`, so the browser gets
+  the container's real `API_URL` and fetches client-side. When a build does
+  prefetch successfully, its RSC snapshot includes the build backend URL in
+  generated query keys/hashes; this is cache metadata, not the runtime client
+  configuration. Changing the runtime backend uses different query keys. The
   first background regeneration past the 60s `revalidate` then restores SSR
   data — verified by building an image with no `API_URL` and running it with
   one. Note `cacheLife('minutes')` also sets `expire: 3600`, so a container

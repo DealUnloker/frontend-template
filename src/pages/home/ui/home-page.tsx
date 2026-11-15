@@ -1,5 +1,6 @@
 import { dehydrate, HydrationBoundary, noop } from '@tanstack/react-query'
 import { cacheLife } from 'next/cache'
+import { Suspense } from 'react'
 import { petQueries } from '@/entities/pet/api/pet.options'
 import { DEFAULT_PET_ID } from '@/features/select-pet/model/demo-pet-ids'
 import { makeQueryClient } from '@/shared/api/query-client'
@@ -27,7 +28,19 @@ export async function HomePage() {
 		<HydrationBoundary state={dehydrate(queryClient)}>
 			<main className='mx-auto max-w-4xl px-4 py-8'>
 				<h1 className='mb-6 text-2xl font-semibold'>Mockzoo</h1>
-				<PetDetails />
+				<Suspense
+					fallback={
+						<section
+							role='status'
+							aria-label='Fetching pet details'
+						>
+							<div className='mb-4 h-9 w-40 rounded-md bg-muted motion-safe:animate-pulse' />
+							<div className='h-24 max-w-sm rounded-lg border border-border bg-muted motion-safe:animate-pulse' />
+						</section>
+					}
+				>
+					<PetDetails />
+				</Suspense>
 			</main>
 		</HydrationBoundary>
 	)

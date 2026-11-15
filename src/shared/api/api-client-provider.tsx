@@ -2,10 +2,10 @@
 
 import type { ClientOptions } from '@generated/backend-api'
 import { createClient, createConfig } from '@generated/backend-api/client'
-import { createContext, type ReactNode, useState } from 'react'
+import { createContext, type ReactNode } from 'react'
 import type { ApiClients } from './types'
 
-export const ApiClientContext = createContext<ApiClients | null>(null)
+export const ApiClientContext = createContext<Promise<ApiClients> | null>(null)
 
 function createClients(apiUrl: string): ApiClients {
 	return {
@@ -17,13 +17,32 @@ function createClients(apiUrl: string): ApiClients {
 	}
 }
 
+// Keyed by the URL promise rather than held in component state: a retry after
+// a failed render hands the provider a new promise, and state would keep
+// serving the rejected one until a full reload.
+const clientsByUrl = new WeakMap<Promise<string>, Promise<ApiClients>>()
+
+function getClients(apiUrl: Promise<string>): Promise<ApiClients> {
+	let clients = clientsByUrl.get(apiUrl)
+	if (!clients) {
+		// Flight thenables support React's use(), but .then() need not return a promise.
+		clients = Promise.resolve(apiUrl).then(createClients)
+		clientsByUrl.set(apiUrl, clients)
+	}
+	return clients
+}
+
+/** Shares runtime API clients without suspending children that do not use them. */
 export function ApiClientProvider({
 	apiUrl,
 	children,
 }: {
-	apiUrl: string
+	apiUrl: Promise<string>
 	children: ReactNode
 }) {
-	const [clients] = useState(() => createClients(apiUrl))
-	return <ApiClientContext value={clients}>{children}</ApiClientContext>
+	return (
+		<ApiClientContext value={getClients(apiUrl)}>
+			{children}
+		</ApiClientContext>
+	)
 }

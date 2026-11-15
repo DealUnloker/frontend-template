@@ -1,4 +1,15 @@
+import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
+
+test('the prerendered shell contains the page chrome', () => {
+	// The static shell is what Next serves before any request-time work. A
+	// provider that suspends above the page leaves only a placeholder in it,
+	// which no request-level assertion below would notice.
+	const shell = readFileSync('.next/server/app/index.html', 'utf8')
+
+	expect(shell).toMatch(/<h1[^>]*>Mockzoo<\/h1>/)
+	expect(shell).toContain('Fetching pet details')
+})
 
 test('home page shows an SSR-prefetched pet', async ({ page }) => {
 	await page.goto('/')
