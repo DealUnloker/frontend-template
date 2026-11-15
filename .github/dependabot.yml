@@ -24,3 +24,6 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Bumped by hand together with `packageManager` in package.json
+      - dependency-name: pnpm/pnpm

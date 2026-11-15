@@ -2,14 +2,9 @@ import { createEnv } from '@t3-oss/env-nextjs'
 import { z } from 'zod'
 
 const env = createEnv({
-	/*
-	 * Serverside Environment variables, not available on the client.
-	 * Will throw if you access these variables on the client.
-	 */
 	server: {
 		API_URL: z.url(),
-		// Public site origin for robots.txt / sitemap.xml. Those routes
-		// call connection(), so this is read (and the default applied) at runtime.
+		// Public origin for robots.txt and sitemap.xml.
 		SITE_URL: z.url().default('http://localhost:3000'),
 	},
 	experimental__runtimeEnv: {},

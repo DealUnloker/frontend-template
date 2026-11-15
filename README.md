@@ -13,7 +13,7 @@ client, and strict tooling out of the box.
 - **Biome** — lint + format (tabs, single quotes, no semicolons)
 - **Lefthook** — pre-commit lint, pre-push type-check + FSD validation
 - **Vitest** + **Testing Library** — colocated component tests
-- **Playwright** — e2e tests in `e2e/`
+- **Playwright** — e2e tests in `e2e/`, including an axe accessibility check
 - **GitHub Actions** — lint, type-check, FSD, tests, build, e2e on push/PR
 - **t3-env** — validated environment variables
 
@@ -48,7 +48,6 @@ ids 1-3), so it works immediately after clone.
 | `pnpm lint` | Biome check + auto-fix |
 | `pnpm lint:ci` | Biome check only (CI) |
 | `pnpm test` | Run Vitest tests |
-| `pnpm test:coverage` | Run Vitest tests with coverage report |
 | `pnpm test:e2e` | Run Playwright e2e tests |
 | `pnpm run fsd` | Validate FSD layer boundaries |
 | `pnpm generate-api` | Regenerate API client from OpenAPI spec |
@@ -69,31 +68,21 @@ src/
 ```
 
 Example data flow: `app/page.tsx` → `src/pages/home` (server component,
-prefetches via `createBackendApiClients()`) → `src/widgets/pet-details` (client
+prefetches with `createServerApiClient()`) → `src/widgets/pet-details` (client
 component, `useApiClient()` + `useQuery`) → `src/entities/pet` (query options
-wrapping the generated client). Synchronous `AppProviders` forwards a promise
-for the runtime `API_URL`, read after `io()`, through `ApiClientProvider`.
-The clients exist at once and each request awaits that URL, so nothing
-suspends at render time: the home page heading and `PetDetails`, rendered from
-the hydrated prefetch, are both in the prerendered HTML. The runtime URL is absent from the
-static HTML; generated query keys contain the path template and parameters,
-without the backend URL.
+wrapping the generated client). `AppProviders` passes a promise for the
+runtime `API_URL` to `ApiClientProvider`; the browser client awaits it per
+request, so nothing suspends at render time and the whole page, pet included,
+is in the prerendered HTML.
 
 ## E2E tests
 
-Playwright specs live in `e2e/`. The web server config builds and starts the
-app itself (`pnpm build-start`); locally it reuses a server already running on
-:3000, and in CI it runs `pnpm start` against the build produced earlier in the
-pipeline.
-
-Note: the demo home page caches its prefetched snapshot with `'use cache'` +
-`cacheLife('minutes')` and fills it from the **live** Mockzoo API at build
-time and on background regenerations, so e2e runs need network access and can
-occasionally flake if the sandbox misbehaves (CI retries failed tests twice).
-Two of the specs assert on the server-rendered HTML, so they also go red when
-a demo pet ID is missing on the sandbox — `POST /v1/admin/reset` restores the
-seed pets. Point `API_URL` at your own backend — or mock the network in
-Playwright — to make them hermetic.
+Playwright specs live in `e2e/`. `pnpm test:e2e` builds and starts the app
+itself; locally it reuses a server already running on :3000, so stop
+`pnpm dev` first. The build fills the cached home page from the **live**
+Mockzoo API, so runs need network access. If the JavaScript-off spec goes
+red, check that the demo pets still exist: `POST /v1/admin/reset` restores
+them. Point `API_URL` at your own backend to make the runs hermetic.
 
 ## Docker
 
@@ -108,61 +97,26 @@ Or with Compose (reads env from `.env.local`):
 docker compose up --build
 ```
 
-## AI agent instructions
+## AI agents
 
-Project conventions for coding agents live in [`AGENTS.md`](./AGENTS.md) — the
-cross-tool open standard read by Codex, Cursor, Copilot, Gemini CLI, Zed and
-others. `CLAUDE.md` is a thin shim that imports it (`@AGENTS.md`), because
-Claude Code reads `CLAUDE.md` and not `AGENTS.md`. Edit `AGENTS.md`, not the
-shim.
+Conventions for coding agents live in [`AGENTS.md`](./AGENTS.md). `CLAUDE.md`
+imports it and adds the Claude Code specifics: permissions, skills and MCP
+servers.
 
-Claude Code additionally picks up two committed files worth reading before you
-trust this workspace:
+The repo ships executable agent configuration, worth reading before you trust
+the workspace: `.claude/settings.json` pre-approves the read-only checks, and
+the servers in `.mcp.json` / `.codex/config.toml` run code — `next-devtools`
+is a version-pinned npm package, `context7` is a remote endpoint. Opt out
+with a `disabledMcpjsonServers` entry in your own settings; delete
+`.agents/skills/` if you do not want the bundled skills.
 
-- `.claude/settings.json` — permission rules. `.env`, `.env.local`,
-  `.env.development` and `.env.production` are denied to the agent; the
-  read-only checks (`verify`, `tsc`, `lint:ci`, `test`, `fsd`, `build`) are
-  pre-approved; `pnpm dlx`, `pnpx`, `pnpm add`, `pnpm install` and `pnpm dev`
-  always ask. Allow rules take effect only after you accept the workspace-trust
-  dialog, which lists them.
-- `.agents/skills/` — Agent Skills, kept in the cross-agent directory that
-  Copilot, Gemini CLI, Zed, opencode and Amp read directly; `.claude/skills/*`
-  symlink to them, because Claude Code scans only its own directory. Ships
-  `fsd-slice` (repo-local, scaffolds an FSD slice) plus four vendored from
-  upstream projects, all MIT: two from `vercel/next.js` (`next-dev-loop` and
-  `next-cache-components-adoption`), `accessibility`
-  from `addyosmani/web-quality-skills`, and `vitest` from `antfu/skills`. The
-  vendored ones are pinned by `skills-lock.json` and refreshed with
-  `npx skills update`. None declare `allowed-tools`, so they grant no tool
-  access of their own; delete `.agents/skills/` if you don't want them.
-
-  On a Windows clone with `core.symlinks=false` the link materializes as a
-  plain text file and Claude Code simply won't find the skill — every other
-  agent still reads the canonical copy, and nothing else breaks. Run
-  `git config core.symlinks true` before cloning to get it, or copy the
-  directory instead of linking.
-
-Note that `.mcp.json` servers execute code: `next-devtools` runs
-`npx -y next-devtools-mcp@latest`, fetched from npm each session, and
-`context7` is a remote HTTP endpoint. To opt out without editing the repo, add
-a `disabledMcpjsonServers` entry to your own settings.
-
-## AI tooling (MCP)
-
-`.mcp.json` ships three project-scoped MCP servers for AI assistants;
-`.codex/config.toml` declares the same three for Codex. Change both files
-together.
-
-- **next-devtools** — version-matched Next.js docs (offline, from
-  `node_modules`) plus live dev-server state: real routes, compilation issues,
-  and errors instead of guesses. Runtime queries need `pnpm dev` running.
-- **shadcn** — resolves components against this project's `components.json`
-  registry, so suggestions match the installed base-nova / Base UI setup.
-- **context7** — up-to-date docs for the rest of the stack; no API key.
+`.claude/skills/*` are symlinks into `.agents/skills/`. On a Windows clone
+with `core.symlinks=false` they become text files and Claude Code will not
+find the skills; other agents read `.agents/skills/` directly.
 
 ## Requirements
 
-- Node >= 24 (`.nvmrc`)
+- Node >= 26 (`.nvmrc`)
 - pnpm 12
 
 ## License

@@ -7,7 +7,7 @@ export default function Loading() {
 				className='size-4 motion-safe:animate-spin'
 				aria-hidden
 			/>
-			<p>Loading…</p>
+			<p role='status'>Loading…</p>
 		</main>
 	)
 }

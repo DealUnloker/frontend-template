@@ -14,12 +14,11 @@ const SPEC_PATH = 'openapi.json'
 process.env.KUBB_DISABLE_TELEMETRY ??= '1'
 
 export default defineConfig(async () => {
-	if (!process.env.API_URL) {
-		try {
-			process.loadEnvFile('.env.local')
-		} catch {
-			// .env.local is optional when API_URL is provided by the environment.
-		}
+	try {
+		// Variables already set in the environment win over the file.
+		process.loadEnvFile('.env.local')
+	} catch {
+		// .env.local is optional.
 	}
 	const { default: env } = await import('./src/shared/config/env')
 	return {

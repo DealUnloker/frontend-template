@@ -13,7 +13,7 @@ knows about.
 | Layer | Holds | Knows about |
 | --- | --- | --- |
 | `shared` | Reusable code with no business meaning: UI kit, API client, `cn()`, env, routes | Nothing project-specific |
-| `entities` | A business entity: its type, its query options, its card | One entity |
+| `entities` | A business entity: its query options, its card | One entity |
 | `features` | One user interaction: selecting, filtering, submitting | The entities it acts on |
 | `widgets` | A composite UI block assembled from features and entities | Several slices |
 | `pages` | A page composition, including SSR prefetch | Everything below |
@@ -33,7 +33,8 @@ mkdir -p src/entities/<slice>/{api,model,ui}
 Create only the segments you need. Files are kebab-case; tests sit next to what
 they test (`pet-card.tsx` → `pet-card.test.tsx`).
 
-Reference slice: `src/entities/pet` (api + model + ui + colocated test).
+Reference slice: `src/entities/pet` (api + ui + colocated tests). Entity types
+come from `@generated/backend-api/types/*`; do not re-export them.
 
 ## 3. Import directly from segments — never create a barrel
 
@@ -70,8 +71,8 @@ export const thingQueries = {
 }
 ```
 
-Consumers get the client from `useApiClient('api')` in client components, or
-`createBackendApiClients()` in server components. Never import the generated
+Consumers get the client from `useApiClient()` in client components, or
+`createServerApiClient()` in server components. Never import the generated
 client or the generated `use*` hooks directly into a component.
 
 ## 5. Wire it into a route

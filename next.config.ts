@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
 	cacheComponents: true,
 	partialPrefetching: true,
 	reactCompiler: true,
+	experimental: { turbopackRustReactCompiler: true },
 	poweredByHeader: false,
 	typedRoutes: true,
 	output: process.env.DOCKER_BUILD ? 'standalone' : undefined,

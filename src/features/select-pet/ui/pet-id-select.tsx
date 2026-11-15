@@ -1,6 +1,5 @@
 'use client'
 
-import { toast } from 'sonner'
 import { Button } from '@/shared/ui/button'
 import { DEMO_PET_IDS } from '../model/demo-pet-ids'
 
@@ -21,13 +20,7 @@ export function PetIdSelect({
 					variant={petId === value ? 'default' : 'outline'}
 					size='sm'
 					aria-pressed={petId === value}
-					onClick={() => {
-						if (petId !== value) {
-							// Sonner demo — toasts render via <Toaster /> in app/layout.tsx
-							toast(`Loading pet #${petId}…`)
-						}
-						onChange(petId)
-					}}
+					onClick={() => onChange(petId)}
 				>
 					#{petId}
 				</Button>

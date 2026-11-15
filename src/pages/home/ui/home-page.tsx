@@ -3,25 +3,20 @@ import { cacheLife } from 'next/cache'
 import { petQueries } from '@/entities/pet/api/pet.options'
 import { DEFAULT_PET_ID } from '@/features/select-pet/model/demo-pet-ids'
 import { makeQueryClient } from '@/shared/api/query-client'
-import { createBackendApiClients } from '@/shared/api/server-api-client'
+import { createServerApiClient } from '@/shared/api/server-api-client'
 import { PetDetails } from '@/widgets/pet-details/ui/pet-details'
 
-// The prefetched snapshot is cached and regenerated in the background at most
-// every 60 seconds — cacheLife('minutes').revalidate, the Cache Components
-// form of the `export const revalidate = 60` this route used to carry.
 export async function HomePage() {
 	'use cache'
+	// Regenerated in the background at most once a minute.
 	cacheLife('minutes')
 
-	const { api } = await createBackendApiClients()
 	const queryClient = makeQueryClient()
-
-	// `.catch(noop)` is load-bearing, not defensive: the Docker image is built
-	// without API_URL, so this fetch fails and must not fail the build.
-	// `dehydrate()` then ships an empty cache, which the first background
-	// regeneration replaces. (prefetchQuery, which swallowed errors on its own,
-	// is deprecated in favour of query().)
-	await queryClient.query(petQueries.byId(api, DEFAULT_PET_ID)).catch(noop)
+	// The Docker image is built without API_URL, and a failed prefetch must
+	// not fail the build: the page starts empty and the browser fetches.
+	await queryClient
+		.query(petQueries.byId(createServerApiClient(), DEFAULT_PET_ID))
+		.catch(noop)
 
 	return (
 		<HydrationBoundary state={dehydrate(queryClient)}>

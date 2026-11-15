@@ -1,12 +1,7 @@
-import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-	plugins: [react()],
-	resolve: {
-		// Resolves the tsconfig `@/` and `@generated/` path aliases natively
-		tsconfigPaths: true,
-	},
+	resolve: { tsconfigPaths: true },
 	// No `reporters` key on purpose: Vitest auto-enables its token-minimal
 	// `minimal` reporter when it detects an AI-agent environment, and configuring
 	// any reporter here skips that detection. CI sets one via a CLI flag.
@@ -14,8 +9,5 @@ export default defineConfig({
 		environment: 'jsdom',
 		setupFiles: ['./vitest.setup.ts'],
 		include: ['src/**/*.test.{ts,tsx}'],
-		coverage: {
-			include: ['src/**'],
-		},
 	},
 })

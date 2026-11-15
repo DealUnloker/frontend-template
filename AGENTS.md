@@ -5,9 +5,8 @@
 - `pnpm verify` — `lint:ci` + `tsc` + `fsd` + `test` in one shot. Takes a few
   seconds; run it before reporting work as done.
 - `pnpm lint` — Biome check **+ auto-fix (writes files)**. To check without
-  writing, use `pnpm lint:ci`. `pnpm lint-unsafe` also applies unsafe fixes.
-- `pnpm test` / `test:watch` / `test:coverage` — Vitest (jsdom + Testing
-  Library); coverage is V8 over `src/**`
+  writing, use `pnpm lint:ci`.
+- `pnpm test` — Vitest (jsdom + Testing Library)
 - `pnpm test:e2e` — Playwright; needs network, builds and starts the app itself
 - `pnpm build` — production build; fills the `'use cache'` snapshot of `/`
   against the live API
@@ -17,7 +16,7 @@
 
 Install dependencies only with `pnpm add`. Agent Skills bundled in
 `.agents/skills/` sometimes give `npm i -g` / `npx` instructions — translate
-them: `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440` plus `overrides`,
+them: `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440`,
 CI runs `pnpm install --frozen-lockfile`, and an npm-installed dev dependency
 fails the build.
 
@@ -54,13 +53,12 @@ Skill, teaches the opposite of the three rules below. This project's choices
 win; do not "fix" the code toward the canonical guidance.
 
 - **No slice `index.ts` barrels.** Canonical FSD makes every slice export
-  through a public API; here `fsd/public-api` and `fsd/no-public-api-sidestep`
-  are off and imports go straight to segment paths.
+  through a public API.
 - **The `widgets/` layer is used on purpose** (`src/widgets/pet-details`).
   The official skill discourages adopting it.
-- **`src/pages/` keeps its name** — it is not renamed to `src/_pages/`, and
-  the root `pages/` stub stays (it holds `_document.tsx` and `404.tsx`, so the
-  empty-directory build failure that motivates the rename does not apply).
+- **`src/pages/` keeps its name** — it is not renamed to `src/_pages/`; the
+  root `pages/` stub (below) removes the build failure that motivates the
+  rename.
 
 ### Next.js routing vs FSD
 
@@ -71,20 +69,18 @@ win; do not "fix" the code toward the canonical guidance.
 - Route files in `app/` are thin: they import a page composition from
   `@/pages/*` (e.g. `app/page.tsx` → `HomePage`).
 - Root-level route conventions live in `app/`: `not-found.tsx`, `error.tsx`,
-  `global-error.tsx`, `loading.tsx`, `robots.ts`, `sitemap.ts`, `manifest.ts`;
-  `metadata` is exported from `app/layout.tsx`.
+  `global-error.tsx`, `loading.tsx`, `robots.ts`, `sitemap.ts`, `manifest.ts`,
+  `icon.svg`; `metadata` and `viewport` are exported from `app/layout.tsx`.
+  `app/favicon.ico` and `public/icon-{192,512}.png` (manifest icons) are
+  rasters of `icon.svg`: re-render them when it changes.
 - `typedRoutes` is enabled; route constants live in `src/shared/config/routes.ts`.
 - Path aliases (`tsconfig.json`): `@/*` → `./src/*`, `@generated/*` →
   `./generated/*`.
 
 ## Code style (Biome)
 
-- Tabs, indent width 4
-- Single quotes, JSX single quotes
-- No semicolons (trailing commas everywhere)
-- Linter: plain `recommended` preset, no rule overrides (unused imports are a
-  warning; a11y rules are active)
-- CSS modules auto-detected by filename, Tailwind directives supported
+Tabs, single quotes, no semicolons, trailing commas; plain `recommended`
+linter preset with the a11y rules on (`biome.json`). `pnpm lint` formats.
 
 ## Git hooks (Lefthook) & CI
 
@@ -113,13 +109,14 @@ win; do not "fix" the code toward the canonical guidance.
 - E2E depends on the **live** Mockzoo API: the build fills the `'use cache'`
   snapshot from it, and background regenerations hit it too. Runs need network
   access and can flake if the sandbox misbehaves; CI retries twice.
-- Two specs read the raw SSR HTML rather than the rendered page: one fails if
-  pet data stops being server-rendered, one fails if `/` starts re-rendering
-  per request instead of coming from cache. If the first goes red, check the
-  demo pet IDs against the Mockzoo deployment before suspecting the app —
-  seed pets 1-3 are stable but still mutable, and
-  `POST /v1/admin/reset` restores them
-  (`src/features/select-pet/model/demo-pet-ids.ts`).
+- `e2e/a11y.spec.ts` runs axe (`@axe-core/playwright`) against the rendered
+  pages and fails on any violation. Add new routes to its list.
+- One spec runs with JavaScript off: it fails if the pet stops being
+  server-rendered or leaves the static shell. If it goes red, check the demo
+  pet IDs against Mockzoo before suspecting the app: seed pets 1-3 are
+  mutable, and `POST /v1/admin/reset` restores them
+  (`src/features/select-pet/model/demo-pet-ids.ts`). Another spec fails if `/`
+  starts re-rendering per request instead of coming from cache.
 
 ## UI stack
 
@@ -127,132 +124,109 @@ win; do not "fix" the code toward the canonical guidance.
 - **Tailwind CSS v4** with OKLCh color system (CSS variables, neutral base).
   Light theme only — there is no dark mode; do not add `dark:` variants.
 - **Lucide** icons (see `src/entities/pet/ui/pet-card.tsx`, `app/loading.tsx`)
-- **sonner** toasts — `<Toaster />` is mounted in `app/layout.tsx`
-  (`src/shared/ui/sonner.tsx`); fire with `toast(...)` (demo in
-  `src/features/select-pet/ui/pet-id-select.tsx`)
-- **class-variance-authority** + **clsx** + **tailwind-merge** for class composition (`cn()` in `src/shared/lib/utils.ts`)
+- **class-variance-authority** + shadcn's **cn** package (it replaces clsx and
+  tailwind-merge) for class composition. `src/shared/lib/utils.ts` re-exports
+  `cn()`, because shadcn components import it from there.
 
 To add a shadcn component: `pnpx shadcn@latest add <component>`
 
 ## Data fetching
 
-- **Kubb v5** — generates types, Zod schemas, a fetch client and React Query
-  options from the OpenAPI spec into `generated/backend-api/` (`types/`, `zod/`,
-  `clients/`, `hooks/`, runtime in `.kubb/`). Spec URL
-  is `${API_URL}/${SPEC_PATH}` (see `kubb.config.ts`); `API_URL` comes
-  from the validated env (`src/shared/config/env.ts`), so generation needs
-  `API_URL` in the environment or the optional `.env.local`. Note: the config
-  imports env via a relative path,
-  not the `@/` alias — jiti (the config loader) doesn't resolve tsconfig paths.
-  Three config choices are load-bearing: `integerType: 'number'` (the default
-  maps int64 to `bigint`, which query keys and JSON cannot carry),
-  `hooks: true` (without the hooks the output has an unused `*QueryKey` type
-  and fails `noUnusedLocals`; the generated `use*` hooks themselves are not
-  used — go through entity options), and the telemetry opt-out at the top of
-  the file (the CLI otherwise posts plugin names and options to
-  `otlp.kubb.dev`).
-  Zod response validation is enabled (`validator: { response: 'zod' }`); the
-  client also validates documented error bodies, and a mismatch throws
-  `ParseError` from `generated/backend-api/.kubb/standardSchema`, while a well-formed
-  non-2xx throws `ResponseError`. Note: Mockzoo is our own backend and is
-  spec-compliant by construction, so a validation failure here now points at
-  a real Mockzoo bug rather than sandbox rot — the demo still fetches pets by
-  ID from a known-good list of stable seed pets, restorable via
-  `POST /v1/admin/reset`
-  (`src/features/select-pet/model/demo-pet-ids.ts`).
-- **TanStack React Query v5** — `QueryClient` factory at `src/shared/api/query-client.ts`
-  (used by both the client provider and SSR prefetch). Its query/mutation caches log
-  Zod response-validation failures via `src/shared/api/log-validation-error.ts` —
-  in the browser console and in the server console during SSR prefetch, where
-  errors are otherwise swallowed. On the server its `staleTime` is `'static'`:
-  a numeric one makes `useQuery` read the clock during render, which Cache
-  Components treats as request-time data, so the component leaves the static
-  shell together with its nearest Suspense boundary (under `app/loading.tsx`
-  that is the whole page). A query that sets its own numeric `staleTime`
-  brings this back — give that component its own `<Suspense>`.
-- **API client context** — `ApiClientProvider` + `useApiClient()` at `src/shared/api/`;
-  the provider takes a runtime URL promise and builds the clients at once;
-  their transport awaits the URL per request, so `useApiClient()` never
-  suspends and a consumer that reads cached data stays in the static shell.
-  `await` the URL, do not chain on it: React Flight thenables' `.then()` does
-  not return a promise. These clients carry no `baseURL`: `api.getUrl()`
-  returns a path, not a full address, and a per-request `baseURL` is not
-  supported (the runtime URL would be put in front of it) — another backend
-  gets its own client in `ApiClients`. The provider does not cache the
-  clients by hand; React Compiler memoizes them on the URL promise.
-  Server components use `createBackendApiClients()` from `src/shared/api/server-api-client.ts`.
-- **Entity QO pattern** — entity options wrap generated Kubb queryOptions and
-  take the client as an argument (see `src/entities/pet/api/pet.options.ts`).
-  Clients come from `createClient({ baseURL })`, which returns an isolated
-  instance; the default `client` exported by `.kubb/client` has no base URL and
-  is never configured — do not call `client.setConfig()`.
-- **SSR prefetch** — server page compositions use `QueryClient` +
-  `query(...).catch(noop)` + `dehydrate` + `HydrationBoundary` (see
-  `src/pages/home/ui/home-page.tsx`). `prefetchQuery` is deprecated in
-  TanStack Query v5 and goes away in v6; `query()` throws instead of
-  swallowing, hence the explicit `catch`.
-- **Caching is opt-in** — Cache Components is enabled, so everything is
-  uncached and dynamic by default and `export const revalidate` / `dynamic` /
-  `fetchCache` are **build errors**. A composition that prefetches marks
-  itself with `'use cache'` + `cacheLife(...)`; `HomePage` uses
-  `cacheLife('minutes')` (stale 5m / revalidate 60s / expire 1h), the direct
-  replacement for the `revalidate = 60` it used to carry. Drop the directive
-  and the route still works — `app/loading.tsx` is the Suspense boundary that
-  keeps it off the prerender path — it just refetches every request.
-  The directive cannot move deeper than the composition: `'use cache'` takes
-  only serializable arguments and return values, and `QueryClient` and the
+- **Kubb v5** generates types, Zod schemas, a fetch client and React Query
+  options from the OpenAPI spec into `generated/backend-api/`
+  (`pnpm generate-api`, config in `kubb.config.ts`). It reads the spec from
+  `${API_URL}/openapi.json`, so it needs `API_URL` in the environment or in
+  `.env.local`. The config imports env by relative path: jiti does not resolve
+  tsconfig aliases. Three settings are load-bearing:
+  - `integerType: 'number'` — int64 otherwise becomes `bigint`, which query
+    keys and JSON cannot carry;
+  - `hooks: true` — without it the output has an unused `*QueryKey` type and
+    fails `noUnusedLocals`. The generated `use*` hooks themselves are not
+    used: go through entity options;
+  - the telemetry opt-out at the top — the CLI otherwise reports plugin names
+    and options to `otlp.kubb.dev`.
+- **Response validation** is on (`validator: { response: 'zod' }`): a mismatch
+  throws `ParseError`, a well-formed non-2xx throws `ResponseError`. The query
+  cache in `src/shared/api/query-client.ts` logs `ParseError` issues, in the
+  browser and during the server prefetch. Mutations are not covered: add a
+  `MutationCache` with the same handler along with the first mutation.
+- **Retries** (same file): in the browser a failed query is retried twice,
+  except a 4xx response or a `ParseError`: those fail at once, since a retry
+  would get the same answer. The server prefetch never retries.
+- **`QueryProvider`** keeps its client in `useState`, so whatever suspends
+  needs a Suspense boundary below the provider (`app/loading.tsx` covers
+  pages); without one React discards the client on the initial render.
+- **API client** (`src/shared/api/`). Server code calls
+  `createServerApiClient()`. Client components call `useApiClient()`:
+  `ApiClientProvider` builds that client at once and its transport awaits the
+  runtime URL promise per request, so the hook never suspends. That client
+  has no `baseURL`: `getUrl()` returns a path, and a per-request `baseURL` is
+  not supported. `await` the URL promise, never chain on it: a React Flight
+  thenable's `.then()` does not return a promise. Do not use or configure the
+  default `client` exported by `.kubb/client`.
+- **Entity query options** wrap the generated ones and take the client as an
+  argument (`src/entities/pet/api/pet.options.ts`).
+- **SSR prefetch**: a server composition creates a `QueryClient`, awaits
+  `query(...).catch(noop)` and renders `HydrationBoundary` with `dehydrate()`
+  (`src/pages/home/ui/home-page.tsx`). `prefetchQuery` is deprecated in
+  TanStack Query v5; `query()` throws, hence the `catch`.
+- **`staleTime` is `'static'` on the server.** A numeric one makes `useQuery`
+  read the clock during render; Cache Components treats that as request-time
+  data and moves the component, with its nearest Suspense boundary, out of
+  the static shell (under `app/loading.tsx` that is the whole page). A query
+  with its own numeric `staleTime` brings this back: give that component its
+  own `<Suspense>`.
+- **Caching is opt-in.** Cache Components is on: everything is dynamic by
+  default, and `export const revalidate` / `dynamic` / `fetchCache` are build
+  errors. A composition that prefetches marks itself `'use cache'` +
+  `cacheLife(...)`; `HomePage` uses `cacheLife('minutes')` (stale 5m,
+  revalidate 60s, expire 1h). The directive cannot move deeper: `'use cache'`
+  takes only serializable arguments and results, and `QueryClient` and the
   API client are neither.
-- **Reading runtime state** — anything that must observe the environment per
-  request needs `await io()` (from `next/cache`) or, in a route handler that
-  should wait for a real request, `await connection()` (from `next/server`).
-  Without one, the value is captured during prerendering and baked into the
-  output. Synchronous `AppProviders` starts `getRuntimeApiUrl()` (which awaits
-  `io()` before reading `API_URL`) and forwards its promise without awaiting it.
-  Nothing on the page waits for that promise at render time, so `HomePage`
-  needs no Suspense of its own: the heading and `PetDetails`, rendered from
-  the hydrated prefetch, are both in the static HTML. Do not wrap such content
-  in a boundary "just in case" — once the fallback has painted, React holds
-  the reveal of streamed content for 300 ms, and every reload flashes it.
-  `robots.ts` and `sitemap.ts` use `connection()` for `SITE_URL`.
+- **Runtime values** need `await io()` (`next/cache`) or, in a route handler,
+  `await connection()` (`next/server`); otherwise they are captured at build
+  time. `AppProviders` starts `getRuntimeApiUrl()` and passes the promise on
+  without awaiting it, so nothing on the page waits for it at render time
+  and `HomePage` needs no Suspense. Do not wrap such content in a boundary
+  "just in case": once a fallback has painted, React holds the reveal of
+  streamed content for 300 ms, and every reload flashes it.
 
 ## Environment
 
-- Validated via t3-env in `src/shared/config/env.ts` (`API_URL` required, server-only).
-- `API_URL` is intentionally NOT `NEXT_PUBLIC_`: it stays swappable at container
-  runtime (no build-time inlining) while still reaching the browser as a promise prop
-  through `ApiClientProvider` (SSR prefetch on the server, direct API calls on
-  the client). Do not convert it to a public env var.
-- `SITE_URL` (optional, server-only, defaults to `http://localhost:3000`) —
-  public origin for robots.txt/sitemap.xml. Those routes call `connection()`,
-  so it is read at runtime like `API_URL` (swappable per container). The Zod
-  default applies at runtime, where validation runs — do not turn these routes
-  static: at build time `SKIP_ENV_VALIDATION=1` (Docker) makes t3-env return
-  raw `process.env` without defaults.
-- `.env.local` is optional; `SKIP_ENV_VALIDATION=1` bypasses validation (used in Docker builds).
+- Validated by t3-env in `src/shared/config/env.ts`. `.env.local` is optional;
+  `SKIP_ENV_VALIDATION=1` skips validation (Docker builds).
+- `API_URL` (required, server-only) is deliberately not `NEXT_PUBLIC_`: it
+  stays swappable per container and reaches the browser as a promise prop.
+- `SITE_URL` (optional, defaults to `http://localhost:3000`) is the public
+  origin for robots.txt and sitemap.xml. Those routes call `connection()`, so
+  it is read at runtime too. Do not make them static: with validation skipped
+  at build time the default is not applied.
 
 ## Build & deploy
 
-- Cache Components (`cacheComponents: true`), React Compiler
-  (`reactCompiler: true`), `poweredByHeader: false`, `typedRoutes: true`
-- Docker: multi-stage `Dockerfile` (standalone output via `DOCKER_BUILD=1`);
-  `.env*` files are dockerignored — pass env at runtime
-- Docker builds have no `API_URL`, so the cached snapshot of `/` is built from
-  a failed prefetch and holds an empty React Query cache (`.catch(noop)`
-  swallows the error and `dehydrate()` keeps successful queries only). The
-  page still works from the first request: the static shell contains the
-  heading, the pet ID buttons and the widget's "Loading pet…" state; the
-  browser's request waits for the URL that `getRuntimeApiUrl()` resolves after
-  `io()`, so it goes to the container's real `API_URL`. Generated query keys
-  hold the path template and params only (`[{ url: '/pets/:petId', params }]`),
-  not the backend URL: when a build does prefetch successfully and the
-  container then runs against a different backend, the browser hydrates the
-  build backend's data under the same key instead of starting empty (not
-  exercised yet). The first background regeneration past the 60s `revalidate` then restores SSR
-  data — verified by building with no `API_URL` and starting that build with
-  one. Note `cacheLife('minutes')` also sets `expire: 3600`, so a container
-  with no traffic for an hour makes the next visitor wait on the API instead
-  of being served a stale snapshot; the old `revalidate = 60` never expired
-- Node >= 24, pnpm 12
+- `next.config.ts`: Cache Components, partial prefetching, React Compiler,
+  typed routes, security headers; standalone output when `DOCKER_BUILD=1`.
+  The compiler is the Rust port (`experimental.turbopackRustReactCompiler`),
+  so there is no Babel plugin. Vitest does not run it: unit tests render
+  uncompiled components, e2e covers the compiled build.
+- Docker: multi-stage `Dockerfile`; `.env*` files are dockerignored — pass env
+  at runtime. Its `HEALTHCHECK` polls `app/api/health/route.ts`.
+- Pins: Docker images by tag and digest, GitHub Actions by commit SHA;
+  Dependabot bumps both. `next-devtools-mcp` is pinned by hand in `.mcp.json`
+  and `.codex/config.toml`.
+- The image is built without `API_URL`, so the prefetch fails and the cached
+  snapshot of `/` holds no data. The page still works: the shell contains the
+  heading, the pet ID buttons and the card skeleton, the browser fetches from
+  the container's `API_URL`, and the first regeneration after 60 s brings the
+  server-rendered data back (checked by building without `API_URL` and
+  starting that build with one).
+- Query keys hold the path template and params, not the backend URL. A build
+  that did prefetch and then runs against another backend hydrates the build
+  backend's data until the first regeneration (not exercised).
+- `cacheLife('minutes')` expires after an hour: with no traffic for that long
+  the next visitor waits on the API instead of getting a stale snapshot.
+- Node >= 26, pnpm 12. The pnpm version is pinned twice: `packageManager` in
+  `package.json` and the `pnpm` stage of the `Dockerfile`.
 
 ## TypeScript 7
 

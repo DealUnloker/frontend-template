@@ -39,6 +39,7 @@ HTML comments are stripped before injection, so this block costs no context.
   `node_modules/next/dist/docs/`, matching the installed version exactly.
   Runtime tools (routes, compilation issues, dev-server errors, single-route
   compilation) sit behind `nextjs_call` and need `pnpm dev`.
+  The package version is pinned; bump it by hand.
 - **`shadcn`** — `shadcn mcp` from the CLI already in devDependencies, run via
   `pnpm exec` so it stays on the lockfile version. Resolves components against
   this project's `components.json` (base-nova / Base UI), so it won't suggest

@@ -1,10 +1,11 @@
 import { io } from 'next/cache'
 import type { ReactNode } from 'react'
-import { ApiClientProvider } from '@/shared/api/api-client-provider'
+import { ApiClientProvider } from '@/shared/api/api-client'
 import env from '@/shared/config/env'
 import { QueryProvider } from './query-provider'
 
-// Defer the env read to request time without suspending the provider tree.
+// `io()` moves the env read to request time; not awaiting the result here
+// keeps the layout out of the wait.
 async function getRuntimeApiUrl() {
 	await io()
 	return env.API_URL
