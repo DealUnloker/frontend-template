@@ -1,7 +1,7 @@
 allowBuilds:
   lefthook: true
   sharp: true
-minimumReleaseAge: 480
+minimumReleaseAge: 1440
 # @hey-api/json-schema-ref-parser pins js-yaml 5.3.0 (merge-key CPU,
 # GHSA-r3ph-w7gj-g6xm); drop once hey-api moves to >=5.4.1
 overrides:

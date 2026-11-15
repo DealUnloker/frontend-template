@@ -16,7 +16,7 @@
 
 Install dependencies only with `pnpm add`. Agent Skills bundled in
 `.agents/skills/` sometimes give `npm i -g` / `npx` instructions — translate
-them: `pnpm-workspace.yaml` sets `minimumReleaseAge: 480` plus `overrides`,
+them: `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440` plus `overrides`,
 CI runs `pnpm install --frozen-lockfile`, and an npm-installed dev dependency
 fails the build.
 
@@ -83,7 +83,7 @@ win; do not "fix" the code toward the canonical guidance.
 - No semicolons (trailing commas everywhere)
 - Linter: plain `recommended` preset, no rule overrides (unused imports are a
   warning; a11y rules are active)
-- CSS modules enabled, Tailwind directives supported
+- CSS modules auto-detected by filename, Tailwind directives supported
 
 ## Git hooks (Lefthook) & CI
 
@@ -138,8 +138,9 @@ To add a shadcn component: `pnpx shadcn@latest add <component>`
 - **Hey API (OpenAPI-TS)** — generates typed client, Zod schemas, and React
   Query options from the OpenAPI spec into `generated/backend-api/`. Spec URL
   is `${API_URL}/${SPEC_PATH}` (see `openapi-ts.config.ts`); `API_URL` comes
-  from the validated env (`src/shared/config/env.ts`), so `.env.local` is
-  required for generation. Note: the config imports env via a relative path,
+  from the validated env (`src/shared/config/env.ts`), so generation needs
+  `API_URL` in the environment or the optional `.env.local`. Note: the config
+  imports env via a relative path,
   not the `@/` alias — jiti (the config loader) doesn't resolve tsconfig paths.
   Zod response validation is enabled. Note: Mockzoo is our own backend and is
   spec-compliant by construction, so a validation failure here now points at

@@ -4,6 +4,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
       # Non-major bumps land as a single weekly PR; majors get their own.
       minor-and-patch:
@@ -17,6 +19,13 @@ updates:
       - dependency-name: '@hey-api/openapi-ts'
 
   - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+
+  - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly

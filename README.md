@@ -14,7 +14,7 @@ client, and strict tooling out of the box.
 - **Lefthook** — pre-commit lint, pre-push type-check + FSD validation
 - **Vitest** + **Testing Library** — colocated component tests
 - **Playwright** — e2e tests in `e2e/`
-- **GitHub Actions** — lint, type-check, FSD, tests, build on push/PR
+- **GitHub Actions** — lint, type-check, FSD, tests, build, e2e on push/PR
 - **t3-env** — validated environment variables
 
 ## Getting started

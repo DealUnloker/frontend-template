@@ -43,3 +43,12 @@ README.md
 # env (never bake env files into the image)
 .env*
 !.env.example
+
+# tooling and test artifacts
+.agents
+.claude
+.codex
+.github
+e2e
+test-results
+playwright-report

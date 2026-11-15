@@ -1,60 +1,18 @@
 {
-	"assist": {
-		"enabled": true,
-		"actions": {
-			"source": {
-				"organizeImports": "on"
-			}
-		}
-	},
-	"json": {
-		"assist": {
-			"enabled": true
-		},
-		"linter": {
-			"enabled": true
-		},
-		"formatter": {
-			"enabled": true
-		}
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"preset": "recommended"
-		}
-	},
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"javascript": {
 		"formatter": {
-			"trailingCommas": "all",
 			"jsxQuoteStyle": "single",
 			"quoteStyle": "single",
 			"semicolons": "asNeeded"
-		},
-		"assist": {
-			"enabled": true
-		},
-		"linter": {
-			"enabled": true
 		}
 	},
 	"css": {
 		"parser": {
-			"cssModules": true,
 			"tailwindDirectives": true
-		},
-		"formatter": {
-			"enabled": true
-		},
-		"linter": {
-			"enabled": true
-		},
-		"assist": {
-			"enabled": true
 		}
 	},
 	"formatter": {
-		"indentStyle": "tab",
 		"indentWidth": 4
 	},
 	"vcs": {
